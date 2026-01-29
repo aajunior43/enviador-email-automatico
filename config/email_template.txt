@@ -1,0 +1,23 @@
+ASSUNTO=Solicitação de Fornecimento.
+
+TEXTO=Prezado(a),
+
+Esperamos que esta mensagem lhe encontre bem.
+
+Encaminhamos em anexo a Solicitação de Fornecimento (SF) emitida pela
+Prefeitura Municipal de Inajá, referente ao processo de contratação
+previamente estabelecido entre as partes.
+Solicitamos, por gentileza, a confirmação do recebimento deste
+documento.
+Em caso de dúvidas ou necessidade de esclarecimentos adicionais, por
+favor, não hesite em nos contatar através dos meios disponibilizados.
+
+Agradecemos antecipadamente pela atenção e parceria.
+Atenciosamente,
+
+Aleksandro Alves da Rocha Junior
+Encarregado da Contabilidade e Fiscal de Contrato
+Setor Financeiro
+Prefeitura Municipal de Inajá - PR
+E-mail: tesouraria@inaja.pr.gov.br
+Telefone: 3112-4320

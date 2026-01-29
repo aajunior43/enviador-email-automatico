@@ -1,0 +1,3 @@
+exemplo1@email.com
+exemplo2@email.com
+exemplo3@email.com
