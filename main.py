@@ -19,7 +19,49 @@ import shutil
 from dotenv import load_dotenv
 
 # Carregar variáveis de ambiente do arquivo .env
-load_dotenv()
+from selenium.common.exceptions import WebDriverException, TimeoutException
+import functools
+
+# Retry decorator
+def retry_on_failure(max_retries=3, delay=5):
+    def decorator(func):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            for attempt in range(max_retries):
+                try:
+                    return func(*args, **kwargs)
+                except (WebDriverException, TimeoutException) as e:
+                    if attempt == max_retries - 1:
+                        print(f"❌ Falha após {max_retries} tentativas: {str(e)}")
+                        raise e
+                    print(f"⚠️ Erro detectado (tentativa {attempt+1}/{max_retries}): {str(e)}")
+                    print(f"🔄 Tentando novamente em {delay} segundos...")
+                    time.sleep(delay)
+            return None # Should not reach here
+        return wrapper
+    return decorator
+
+# Smart wait
+def wait_for_element_smart(driver, by, value, timeout=10, condition=EC.presence_of_element_located):
+    """
+    Espera inteligente que ajusta o timeout se detectar lentidão
+    """
+    start_time = time.time()
+    try:
+        # Tentar com timeout padrão
+        element = WebDriverWait(driver, timeout).until(condition((by, value)))
+        
+        # Se demorou mais que 70% do timeout, registrar lentidão (futuro: ajustar dinamicamente)
+        elapsed = time.time() - start_time
+        if elapsed > (timeout * 0.7):
+            print(f"⚠️ Lentidão detectada: Elemento {value} demorou {elapsed:.2f}s")
+            
+        return element
+    except TimeoutException:
+        # Se falhar, tentar uma vez com dobro do tempo antes de desistir
+        print(f"⚠️ Elemento {value} não encontrado em {timeout}s. Tentando mais {timeout}s...")
+        return WebDriverWait(driver, timeout).until(condition((by, value)))
+
 
 
 def verificar_e_aguardar_captcha(driver):
@@ -111,51 +153,45 @@ def fazer_login(driver, url_webmail, email, senha):
     try:
         print("\n🌐 Acessando webmail...")
         driver.get(url_webmail)
-        time.sleep(3)
         
+        # Verificar CAPTCHA (que já tem sleep interno se necessário)
         verificar_e_aguardar_captcha(driver)
         
         print("🔐 Fazendo login...")
         
         # Tentar encontrar campos de login (Roundcube)
         try:
-            # Campo de usuário - usando XPath específico do usuário
-            user_field = WebDriverWait(driver, 10).until(
-                EC.presence_of_element_located((By.XPATH, '/html/body/div[2]/div/div[3]/div/div/div[2]/div[2]/form/div[2]/input'))
-            )
-            user_field.clear()
-            user_field.send_keys(email)
+            # Espera Inteligente pelo campo de usuário
+            user_input = wait_for_element_smart(driver, By.NAME, "_user", timeout=15)
+            user_input.clear()
+            user_input.send_keys(email)
             
-            # Campo de senha - usando XPath específico do usuário
-            pass_field = driver.find_element(By.XPATH, '/html/body/div[2]/div/div[3]/div/div/div[2]/div[2]/form/div[4]/input')
-            pass_field.clear()
-            pass_field.send_keys(senha)
+            pass_input = driver.find_element(By.NAME, "_pass")
+            pass_input.clear()
+            pass_input.send_keys(senha)
             
-            # Botão "Entrar" - usando XPath específico do usuário
-            login_button = driver.find_element(By.XPATH, '/html/body/div[2]/div/div[3]/div/div/div[2]/div[2]/form/div[5]/div/button')
-            login_button.click()
-            
-            time.sleep(5)
+            driver.find_element(By.ID, "rcm_submit").click()
             
             # Verificar se login foi bem-sucedido
-            if "task=mail" in driver.current_url or "INBOX" in driver.current_url:
-                print("✅ Login realizado com sucesso!")
-                return True
-            else:
-                print("❌ Falha no login. Verifique suas credenciais.")
-                return False
+            # Usar wait_for_element_smart para aguardar um elemento pós-login
+            WebDriverWait(driver, 15).until(
+                EC.url_contains("task=mail") or EC.url_contains("INBOX")
+            )
+            print("✅ Login realizado com sucesso!")
+            return True
                 
         except Exception as e:
-            print(f"❌ Erro ao localizar campos de login: {str(e)}")
+            print(f"❌ Erro ao localizar campos de login automaticamente: {str(e)}")
             print("💡 Tente fazer login manualmente...")
             input("Pressione ENTER após fazer login manualmente >>> ")
             return True
-            
+
     except Exception as e:
-        print(f"❌ Erro ao acessar webmail: {str(e)}")
+        print(f"❌ Erro geral ao fazer login: {str(e)}")
         return False
 
 
+@retry_on_failure(max_retries=3)
 def enviar_email(driver, destinatario, assunto, mensagem, anexos=None):
     """
     Envia um email via Roundcube

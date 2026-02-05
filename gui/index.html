@@ -7,6 +7,7 @@
     <title>Enviador de Email Automático - Roundcube</title>
     <meta name="description" content="Interface moderna para automação de envio de emails via Roundcube webmail">
     <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="drag.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
@@ -187,6 +188,19 @@
                         </div>
                         <h3 class="mode-title">Automático</h3>
                         <p class="mode-description">Baseado em arquivos na pasta</p>
+                    </button>
+
+                    <button class="mode-option" data-mode="contacts" id="modeContacts">
+                        <div class="mode-icon">
+                            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="9" cy="7" r="4"></circle>
+                                <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                            </svg>
+                        </div>
+                        <h3 class="mode-title">Contatos</h3>
+                        <p class="mode-description">Gerenciar lista de emails</p>
                     </button>
                 </div>
             </section>
@@ -430,6 +444,15 @@
                             <div class="form-group email-group-organizer">
                                 <label for="organizerEmail">Renomear para (Email do Destinatário)</label>
                                 <div class="input-with-button">
+                                    <button class="btn btn-secondary" id="scanEmailBtn" title="Detectar Email no PDF"
+                                        style="margin-right: 0.5rem; padding: 0.5rem;">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                            style="width: 20px; height: 20px;">
+                                            <path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                            <path
+                                                d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                        </svg>
+                                    </button>
                                     <input type="email" id="organizerEmail" class="form-input"
                                         placeholder="destinatario@email.com">
                                     <button class="btn btn-primary" id="processFileBtn">
@@ -519,6 +542,52 @@ Equipe</textarea>
                 </div>
             </section>
 
+            <!-- Contacts Mode -->
+            <section class="card email-form-card hidden" id="contactsSection">
+                <div class="card-header">
+                    <div class="card-icon">
+                        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="9" cy="7" r="4"></circle>
+                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <h2 class="card-title">Gerenciar Contatos</h2>
+                        <p class="card-description">Adicione e organize seus contatos frequentes</p>
+                    </div>
+                    <button class="btn btn-primary" onclick="showAddContactModal()" style="margin-left: auto;">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            style="width: 16px; height: 16px; margin-right: 4px;">
+                            <path d="M12 5v14M5 12h14" />
+                        </svg>
+                        Novo Contato
+                    </button>
+                </div>
+
+                <div class="contacts-container" style="padding: 1.5rem;">
+                    <div class="table-container">
+                        <table class="data-table" id="contactsTable" style="width: 100%; border-collapse: collapse;">
+                            <thead>
+                                <tr style="background: var(--color-bg-secondary); text-align: left;">
+                                    <th style="padding: 1rem;">Nome</th>
+                                    <th style="padding: 1rem;">Email</th>
+                                    <th style="padding: 1rem; text-align: right;">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Preenchido via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <div id="noContactsMessage" class="empty-state hidden"
+                        style="text-align: center; padding: 2rem; color: var(--color-text-secondary);">
+                        <p>Nenhum contato cadastrado ainda.</p>
+                    </div>
+                </div>
+            </section>
+
             <!-- Live Log Area -->
             <section class="card log-card" id="logSection">
                 <div class="card-header">
@@ -533,6 +602,15 @@ Equipe</textarea>
                         <h2 class="card-title">Log de Atividades</h2>
                         <p class="card-description">Acompanhe em tempo real o que está acontecendo</p>
                     </div>
+                    <button class="btn btn-secondary" onclick="downloadReport()"
+                        style="margin-left: auto; margin-right: 0.5rem; font-size: 0.85rem; padding: 0.4rem 0.8rem; display: flex; align-items: center; gap: 0.5rem;">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            style="width: 16px; height: 16px;">
+                            <path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                                stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>
+                        Relatório PDF
+                    </button>
                     <button class="btn-icon" id="clearLogBtn" title="Limpar logs">
                         <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <path
@@ -562,6 +640,17 @@ Equipe</textarea>
                             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
                     </svg>
                     <span>Testar Conexão</span>
+                </button>
+                <button class="btn btn-secondary" id="previewBtn">
+                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path
+                            d="M15 12C15 13.6569 13.6569 15 12 15C10.3431 15 9 13.6569 9 12C9 10.3431 10.3431 9 12 9C13.6569 9 15 10.3431 15 12Z"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                        <path
+                            d="M2.45825 12C3.73253 7.94288 7.52281 5 12.0004 5C16.4781 5 20.2684 7.94291 21.5426 12C20.2684 16.0571 16.4781 19 12.0005 19C7.52281 19 3.73251 16.0571 2.45825 12Z"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                    <span>Pré-visualizar</span>
                 </button>
                 <button class="btn btn-primary" id="sendBtn">
                     <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -606,6 +695,18 @@ Equipe</textarea>
                 <button class="btn btn-secondary" id="modalCancel">Cancelar</button>
                 <button class="btn btn-primary" id="modalConfirm">Confirmar</button>
             </div>
+        </div>
+    </div>
+
+    <!-- Drag Overlay -->
+    <div id="dropOverlay" class="drop-overlay hidden">
+        <div class="drop-message">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+            <h3>Solte os arquivos aqui</h3>
+            <p>Adicionar à Triagem</p>
         </div>
     </div>
 

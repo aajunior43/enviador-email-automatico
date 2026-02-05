@@ -1,0 +1,52 @@
+/* Drag and Drop Overlay */
+.drop-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    z-index: 2000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(4px);
+    transition: opacity 0.2s ease;
+}
+
+.drop-overlay.hidden {
+    display: none;
+    opacity: 0;
+}
+
+.drop-message {
+    background: var(--color-bg-card);
+    padding: 3rem;
+    border-radius: var(--radius-lg);
+    text-align: center;
+    border: 2px dashed var(--color-primary);
+    box-shadow: var(--shadow-xl);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.drop-message svg {
+    width: 64px;
+    height: 64px;
+    color: var(--color-primary);
+    margin-bottom: 1rem;
+}
+
+.drop-message h3 {
+    margin: 0;
+    margin-bottom: 0.5rem;
+    color: var(--color-text-primary);
+    font-size: 1.5rem;
+}
+
+.drop-message p {
+    margin: 0;
+    color: var(--color-text-secondary);
+    font-size: 1.1rem;
+}

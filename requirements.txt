@@ -3,3 +3,5 @@ webdriver-manager
 python-dotenv
 flask
 flask-cors
+PyPDF2
+fpdf

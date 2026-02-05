@@ -1179,6 +1179,7 @@ body {
 
 .log-entry.success {
     background: hsla(142, 71%, 45%, 0.05);
+    border-left: 3px solid var(--color-success);
 }
 
 .log-entry.warning .log-icon {
@@ -1187,6 +1188,7 @@ body {
 
 .log-entry.warning {
     background: hsla(38, 92%, 50%, 0.05);
+    border-left: 3px solid var(--color-warning);
 }
 
 .log-entry.error .log-icon {
@@ -1195,6 +1197,7 @@ body {
 
 .log-entry.error {
     background: hsla(0, 84%, 60%, 0.05);
+    border-left: 3px solid var(--color-error);
 }
 
 .log-entry.step .log-icon {

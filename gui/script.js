@@ -11,7 +11,8 @@ const state = {
     files: {
         single: [],
         batch: []
-    }
+    },
+    selectedTriagemFiles: new Set()
 };
 
 // ===================================
@@ -23,12 +24,15 @@ const elements = {
     modeBatch: document.getElementById('modeBatch'),
     modeAuto: document.getElementById('modeAuto'),
     modeOrganizer: document.getElementById('modeOrganizer'),
+    modeContacts: document.getElementById('modeContacts'),
 
     // Forms
     singleModeForm: document.getElementById('singleModeForm'),
     batchModeForm: document.getElementById('batchModeForm'),
+    batchModeForm: document.getElementById('batchModeForm'),
     autoModeForm: document.getElementById('autoModeForm'),
     organizerSection: document.getElementById('organizerSection'),
+    contactsSection: document.getElementById('contactsSection'),
 
     // Inputs
     webmailUrl: document.getElementById('webmailUrl'),
@@ -57,6 +61,7 @@ const elements = {
 
     // Buttons
     testBtn: document.getElementById('testBtn'),
+    previewBtn: document.getElementById('previewBtn'),
     sendBtn: document.getElementById('sendBtn'),
 
     // Status
@@ -89,7 +94,12 @@ const elements = {
     organizerEmail: document.getElementById('organizerEmail'),
     organizerControls: document.getElementById('organizerControls'),
     refreshTriagemBtn: document.getElementById('refreshTriagemBtn'),
-    processFileBtn: document.getElementById('processFileBtn')
+    processFileBtn: document.getElementById('processFileBtn'),
+    scanEmailBtn: document.getElementById('scanEmailBtn'),
+
+    // Contacts
+    contactsTable: document.getElementById('contactsTable'),
+    noContactsMessage: document.getElementById('noContactsMessage')
 };
 
 // ===================================
@@ -117,6 +127,7 @@ function setupEventListeners() {
     elements.modeBatch.addEventListener('click', () => switchMode('batch'));
     elements.modeAuto.addEventListener('click', () => switchMode('auto'));
     elements.modeOrganizer.addEventListener('click', () => switchMode('organizer'));
+    if (elements.modeContacts) elements.modeContacts.addEventListener('click', () => switchMode('contacts'));
 
     // Password toggle
     elements.togglePassword.addEventListener('click', togglePasswordVisibility);
@@ -130,6 +141,7 @@ function setupEventListeners() {
 
     // Buttons
     elements.testBtn.addEventListener('click', testConnection);
+    elements.previewBtn.addEventListener('click', showPreview);
     elements.sendBtn.addEventListener('click', sendEmails);
 
     // Modal
@@ -161,6 +173,7 @@ function setupEventListeners() {
     // Organizer Listeners
     if (elements.refreshTriagemBtn) elements.refreshTriagemBtn.addEventListener('click', loadTriagemFiles);
     if (elements.processFileBtn) elements.processFileBtn.addEventListener('click', processTriagemFile);
+    if (elements.scanEmailBtn) elements.scanEmailBtn.addEventListener('click', scanEmail);
 }
 
 // ===================================
@@ -223,6 +236,7 @@ function switchMode(mode) {
     elements.modeBatch.classList.toggle('active', mode === 'batch');
     elements.modeAuto.classList.toggle('active', mode === 'auto');
     elements.modeOrganizer.classList.toggle('active', mode === 'organizer');
+    if (elements.modeContacts) elements.modeContacts.classList.toggle('active', mode === 'contacts');
 
     elements.singleModeForm.classList.toggle('hidden', mode !== 'single');
     elements.batchModeForm.classList.toggle('hidden', mode !== 'batch');
@@ -231,12 +245,18 @@ function switchMode(mode) {
     if (elements.organizerSection) {
         elements.organizerSection.classList.toggle('hidden', mode !== 'organizer');
     }
+    if (elements.contactsSection) {
+        elements.contactsSection.classList.toggle('hidden', mode !== 'contacts');
+    }
 
     // Gerenciar visibilidade dos botões principais
     const actionButtons = document.querySelector('.action-buttons');
     if (mode === 'organizer') {
         if (actionButtons) actionButtons.classList.add('hidden');
         loadTriagemFiles();
+    } else if (mode === 'contacts') {
+        if (actionButtons) actionButtons.classList.add('hidden');
+        loadContacts();
     } else {
         if (actionButtons) actionButtons.classList.remove('hidden');
     }
@@ -648,19 +668,31 @@ function sendBatchEmails(emails) {
         'Confirmar Envio em Lote',
         `
             <p>Você está prestes a enviar <strong>${emails.length} emails</strong>.</p>
-            <p style="margin-top: 1rem; color: var(--color-text-secondary);">Assunto: ${data.subject}</p>
-            <p style="margin-top: 0.5rem; color: var(--color-text-secondary);">Esta operação pode levar alguns minutos.</p>
+            <p style="margin-top: 0.5rem;">Assunto: ${data.subject}</p>
+            <div style="margin-top: 1rem; padding: 0.75rem; background: var(--color-bg-secondary); border-radius: var(--radius-sm); font-size: 0.875rem;">
+                <p>⚠️ O navegador será aberto e controlado automaticamente.</p>
+                <p>⚠️ Não use o computador enquanto o processo estiver rodando.</p>
+            </div>
+            <div id="progressContainer" style="margin-top: 1rem; display: none;">
+                <div style="background: var(--color-bg-tertiary); height: 8px; border-radius: 4px; overflow: hidden;">
+                    <div id="progressBar" style="width: 0%; height: 100%; background: var(--color-primary); transition: width 0.3s;"></div>
+                </div>
+                <p id="progressText" style="text-align: center; font-size: 0.8rem; margin-top: 0.5rem; color: var(--color-text-secondary);">Iniciando...</p>
+            </div>
         `,
         async () => {
-            updateStatus('Enviando...', 'info');
-            showToast('Enviando', `Processando ${emails.length} emails...`, 'info');
+            updateStatus('Iniciando...', 'info');
+            showToast('Enviando', `Iniciando envio para ${emails.length} destinatários...`, 'info');
 
             addLog(`📚 Iniciando envio em lote para ${emails.length} destinatários`, 'info');
             addLog(`📝 Assunto: ${data.subject}`, 'step');
-            addLog('🌐 Verificando conexão com webmail...', 'step');
+
+            // Iniciar Polling
+            const pollInterval = setInterval(pollProgress, 1000);
 
             try {
-                addLog('📤 Enviando lote para processamento...', 'step');
+                // TODO: Chamar automation real
+                // Por enquanto, backend já implementa a automação real na rota /api/send-email
 
                 const response = await fetch('/api/send-email', {
                     method: 'POST',
@@ -671,13 +703,13 @@ function sendBatchEmails(emails) {
                 const result = await response.json();
 
                 if (result.success) {
-                    const stats = result.stats || {};
-                    addLog(`✅ Processamento concluído!`, 'success');
-                    addLog(`📤 Enviados: ${stats.sent || 0}`, 'success');
-                    addLog(`❌ Falhas: ${stats.failed || 0}`, stats.failed > 0 ? 'warning' : 'success');
+                    const stats = result.stats || {}; // stats pode não vir no batch antigo, mas adicionei no novo
+                    addLog('✅ ' + result.message, 'success');
+                    if (result.sent !== undefined) addLog(`📤 Enviados: ${result.sent}`, 'success');
+                    if (result.failed !== undefined) addLog(`❌ Falhas: ${result.failed}`, result.failed > 0 ? 'warning' : 'success');
 
                     showToast('Sucesso', result.message, 'success');
-                    updateStatus('Pronto', 'success');
+                    updateStatus('Concluído', 'success');
 
                     // Clear form
                     elements.recipientList.value = '';
@@ -686,7 +718,6 @@ function sendBatchEmails(emails) {
                     elements.batchAttachment.value = '';
                     elements.batchFileList.innerHTML = '';
                     state.files.batch = [];
-                    document.getElementById('emailCount').textContent = '0 emails válidos';
                 } else {
                     addLog('❌ ' + result.message, 'error');
                     showToast('Erro', result.message, 'error');
@@ -697,6 +728,8 @@ function sendBatchEmails(emails) {
                 addLog('❌ Erro no envio em lote: ' + error.message, 'error');
                 showToast('Erro', 'Erro: ' + error.message, 'error');
                 updateStatus('Erro', 'error');
+            } finally {
+                clearInterval(pollInterval);
             }
         }
     );
@@ -729,6 +762,9 @@ function sendAutoEmails() {
             addLog(`📝 Assunto: ${data.subject}`, 'step');
             addLog('📂 Verificando arquivos na pasta anexos/', 'step');
 
+            // Iniciar Polling
+            const pollInterval = setInterval(pollProgress, 1000);
+
             try {
                 addLog('📤 Iniciando processamento...', 'step');
 
@@ -747,7 +783,7 @@ function sendAutoEmails() {
                     addLog(`❌ Falhas: ${stats.failed || 0}`, stats.failed > 0 ? 'warning' : 'success');
 
                     showToast('Sucesso', result.message, 'success');
-                    updateStatus('Pronto', 'success');
+                    updateStatus('Concluído', 'success');
                 } else {
                     addLog('❌ ' + result.message, 'error');
                     showToast('Erro', result.message, 'error');
@@ -758,6 +794,8 @@ function sendAutoEmails() {
                 addLog('❌ Erro no envio automático: ' + error.message, 'error');
                 showToast('Erro', 'Erro: ' + error.message, 'error');
                 updateStatus('Erro', 'error');
+            } finally {
+                clearInterval(pollInterval);
             }
         }
     );
@@ -783,7 +821,7 @@ async function loadTriagemFiles() {
                     </svg>
                     <span class="sidebar-item-name">${file}</span>
                 `;
-                item.onclick = () => selectTriagemFile(file, item);
+                item.onclick = (e) => selectTriagemFile(file, item, e);
                 elements.triagemList.appendChild(item);
             });
         } else {
@@ -795,32 +833,104 @@ async function loadTriagemFiles() {
     }
 }
 
-function selectTriagemFile(filename, element) {
-    // Highlight
-    document.querySelectorAll('.sidebar-item').forEach(el => el.classList.remove('active'));
-    element.classList.add('active');
+function selectTriagemFile(filename, element, event) {
+    if (event && (event.ctrlKey || event.metaKey)) {
+        // Toggle selection
+        if (state.selectedTriagemFiles.has(filename)) {
+            state.selectedTriagemFiles.delete(filename);
+            element.classList.remove('active');
+        } else {
+            state.selectedTriagemFiles.add(filename);
+            element.classList.add('active');
+        }
+    } else {
+        // Single selection
+        state.selectedTriagemFiles.clear();
+        state.selectedTriagemFiles.add(filename);
+        document.querySelectorAll('.sidebar-item').forEach(el => el.classList.remove('active'));
+        element.classList.add('active');
+    }
 
-    // Preview
-    const encoded = encodeURIComponent(filename);
-    elements.filePreview.innerHTML = `
-        <iframe src="/api/triagem/file/${encoded}" class="preview-iframe"></iframe>
-    `;
+    const count = state.selectedTriagemFiles.size;
 
-    // Controls
+    if (count === 0) {
+        elements.filePreview.innerHTML = '<div class="preview-placeholder"><p>Selecione um arquivo</p></div>';
+        elements.organizerControls.classList.add('disabled');
+        state.currentTriagemFile = null;
+        return;
+    }
+
     elements.organizerControls.classList.remove('disabled');
-    elements.organizerEmail.value = '';
-    elements.organizerEmail.focus();
 
-    // Store current file
-    state.currentTriagemFile = filename;
+    // Preview logic
+    if (count === 1) {
+        // Show preview for single file
+        const file = Array.from(state.selectedTriagemFiles)[0];
+        const encoded = encodeURIComponent(file);
+        elements.filePreview.innerHTML = `
+            <iframe src="/api/triagem/file/${encoded}" class="preview-iframe"></iframe>
+        `;
+        state.currentTriagemFile = file; // Backward compatibility/convenience
+    } else {
+        // Multi-file summary
+        elements.filePreview.innerHTML = `
+            <div class="preview-placeholder">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 48px; height: 48px; margin-bottom: 1rem;"><path d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                <h3>${count} arquivos selecionados</h3>
+                <ul style="text-align: left; margin-top: 1rem; color: var(--color-text-secondary);">
+                    ${Array.from(state.selectedTriagemFiles).map(f => `<li>${f}</li>`).join('')}
+                </ul>
+            </div>
+        `;
+        state.currentTriagemFile = null;
+    }
+
+    elements.organizerEmail.focus();
+}
+
+async function scanEmail() {
+    const count = state.selectedTriagemFiles.size;
+    if (count === 0) {
+        showToast('Atenção', 'Selecione um arquivo para escanear', 'warning');
+        return;
+    }
+
+    // Scan first file
+    const filename = Array.from(state.selectedTriagemFiles)[0];
+
+    updateStatus('Escaneando...', 'info');
+    showToast('Scan', 'Procurando email no arquivo...', 'info');
+
+    try {
+        const response = await fetch('/api/triagem/scan', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ filename })
+        });
+        const result = await response.json();
+
+        if (result.success) {
+            elements.organizerEmail.value = result.email;
+            showToast('Sucesso', 'Email detectado: ' + result.email, 'success');
+            addLog(`🔍 Email detectado em ${filename}: ${result.email}`, 'info');
+            updateStatus('Email Detectado', 'success');
+        } else {
+            showToast('Aviso', result.message, 'warning');
+            updateStatus('Não encontrado', 'warning');
+        }
+    } catch (error) {
+        console.error('Erro no scan:', error);
+        showToast('Erro', 'Falha ao escanear arquivo', 'error');
+        updateStatus('Erro', 'error');
+    }
 }
 
 async function processTriagemFile() {
     const email = elements.organizerEmail.value;
-    const filename = state.currentTriagemFile;
+    const count = state.selectedTriagemFiles.size;
 
-    if (!email || !filename) {
-        showToast('Atenção', 'Digite o email do destinatário', 'warning');
+    if (!email || count === 0) {
+        showToast('Atenção', 'Selecione arquivos e digite o email', 'warning');
         return;
     }
 
@@ -831,18 +941,21 @@ async function processTriagemFile() {
     }
 
     try {
+        const filesToProcess = Array.from(state.selectedTriagemFiles);
+
         const response = await fetch('/api/triagem/process', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ filename, email })
+            body: JSON.stringify({ files: filesToProcess, email })
         });
 
         const result = await response.json();
 
         if (result.success) {
             showToast('Sucesso', 'Arquivo movido para para envio!', 'success');
-            addLog(`✅ Arquivo preparado: ${email}`, 'success');
+            addLog(`✅ ${state.selectedTriagemFiles.size} arquivos preparados para: ${email}`, 'success');
             loadTriagemFiles();
+            state.selectedTriagemFiles.clear();
             elements.filePreview.innerHTML = '<div class="preview-placeholder"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><p>Selecione um arquivo</p></div>';
             elements.organizerControls.classList.add('disabled');
             state.currentTriagemFile = null;
@@ -906,6 +1019,82 @@ function showHelp() {
             </div>
         `
     );
+}
+
+// ===================================
+// PROGRESS POLLING
+// ===================================
+async function pollProgress() {
+    try {
+        const response = await fetch('/api/progress');
+        const data = await response.json();
+
+        if (data.status === 'running') {
+            const pct = data.total > 0 ? Math.round((data.current / data.total) * 100) : 0;
+            updateStatus(`${data.current}/${data.total} (${pct}%) - ${data.message}`, 'info');
+        }
+    } catch (error) {
+        console.error('Erro no polling:', error);
+    }
+}
+
+function showPreview() {
+    const mode = state.currentMode;
+    let content = '';
+
+    if (mode === 'single') {
+        const recipient = elements.recipient.value || '<span style="color: var(--color-text-tertiary)">(vazio)</span>';
+        const subject = elements.subject.value || '<span style="color: var(--color-text-tertiary)">(vazio)</span>';
+        const message = elements.message.value
+            ? elements.message.value.replace(/\n/g, '<br>')
+            : '<span style="color: var(--color-text-tertiary)">(vazio)</span>';
+
+        content = `
+            <div style="display: flex; flex-direction: column; gap: 1rem;">
+                <div>
+                    <strong>Para:</strong> ${recipient}
+                </div>
+                <div>
+                    <strong>Assunto:</strong> ${subject}
+                </div>
+                <hr style="border: 0; border-top: 1px solid var(--color-divider);">
+                <div style="background: var(--color-bg-secondary); padding: 1rem; border-radius: var(--radius-md);">
+                    ${message}
+                </div>
+            </div>
+        `;
+    } else if (mode === 'batch') {
+        const emails = elements.recipientList.value.split('\n').filter(l => l.trim());
+        const count = emails.length;
+        const subject = elements.batchSubject.value || '<span style="color: var(--color-text-tertiary)">(vazio)</span>';
+        const message = elements.batchMessage.value
+            ? elements.batchMessage.value.replace(/\n/g, '<br>')
+            : '<span style="color: var(--color-text-tertiary)">(vazio)</span>';
+
+        content = `
+            <div style="display: flex; flex-direction: column; gap: 1rem;">
+                <div>
+                    <strong>Para:</strong> ${count} destinatários (Lista)
+                    <div style="max-height: 100px; overflow-y: auto; font-size: 0.8rem; margin-top: 0.5rem; color: var(--color-text-secondary);">
+                        ${emails.slice(0, 5).join('<br>')}
+                        ${count > 5 ? `<br>... e mais ${count - 5}` : ''}
+                    </div>
+                </div>
+                <div>
+                    <strong>Assunto:</strong> ${subject}
+                </div>
+                <hr style="border: 0; border-top: 1px solid var(--color-divider);">
+                <div style="background: var(--color-bg-secondary); padding: 1rem; border-radius: var(--radius-md);">
+                    ${message}
+                </div>
+            </div>
+        `;
+    } else {
+        showToast('Info', 'Preview indisponível neste modo', 'info');
+        return;
+    }
+
+    showModal('Pré-visualização do Email', content, null);
 }
 
 // ===================================
@@ -990,3 +1179,220 @@ async function loadCredentialsFromEnv() {
 // START APPLICATION
 // ===================================
 document.addEventListener('DOMContentLoaded', init);
+
+// ===================================
+// DRAG AND DROP
+// ===================================
+document.body.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    if (state.currentMode === 'organizer') {
+        const overlay = document.getElementById('dropOverlay');
+        if (overlay) overlay.classList.remove('hidden');
+    }
+});
+
+document.body.addEventListener('dragleave', (e) => {
+    if (e.relatedTarget === null) {
+        const overlay = document.getElementById('dropOverlay');
+        if (overlay) overlay.classList.add('hidden');
+    }
+});
+
+document.body.addEventListener('drop', async (e) => {
+    e.preventDefault();
+    const overlay = document.getElementById('dropOverlay');
+    if (overlay) overlay.classList.add('hidden');
+
+    if (state.currentMode === 'organizer') {
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+            uploadFilesToTriagem(files);
+        }
+    }
+});
+
+async function uploadFilesToTriagem(files) {
+    const formData = new FormData();
+    for (const file of files) {
+        formData.append('files[]', file);
+    }
+
+    updateStatus('Enviando arquivos...', 'info');
+    showToast('Upload', `Enviando ${files.length} arquivos para triagem...`, 'info');
+
+    try {
+        const response = await fetch('/api/triagem/upload', {
+            method: 'POST',
+            body: formData
+        });
+        const result = await response.json();
+
+        if (result.success) {
+            showToast('Sucesso', result.message, 'success');
+            loadTriagemFiles(); // Recarregar lista
+            updateStatus('Concluído', 'success');
+        } else {
+            showToast('Erro', result.message, 'error');
+            updateStatus('Erro', 'error');
+        }
+    } catch (error) {
+        console.error(error);
+        showToast('Erro', 'Falha no upload', 'error');
+        updateStatus('Erro', 'error');
+    }
+}
+
+// ===================================
+// CONTACTS MANAGEMENT
+// ===================================
+async function loadContacts() {
+    try {
+        const response = await fetch('/api/contacts');
+        const contacts = await response.json();
+
+        renderContacts(contacts);
+    } catch (error) {
+        console.error('Erro ao carregar contatos:', error);
+        showToast('Erro', 'Falha ao carregar contatos', 'error');
+    }
+}
+
+function renderContacts(contacts) {
+    const tbody = elements.contactsTable.querySelector('tbody');
+    tbody.innerHTML = '';
+
+    if (!contacts || contacts.length === 0) {
+        elements.noContactsMessage.classList.remove('hidden');
+        elements.contactsTable.classList.add('hidden');
+        return;
+    }
+
+    elements.noContactsMessage.classList.add('hidden');
+    elements.contactsTable.classList.remove('hidden');
+
+    contacts.forEach(contact => {
+        const tr = document.createElement('tr');
+        tr.style.borderBottom = '1px solid var(--color-border)';
+
+        tr.innerHTML = `
+            <td style="padding: 1rem;">${contact.name}</td>
+            <td style="padding: 1rem;">${contact.email}</td>
+            <td style="padding: 1rem; text-align: right;">
+                <button class="btn-icon-small" onclick="deleteContact('${contact.email}')" title="Excluir" style="color: var(--color-error);">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 18px; height: 18px;"><path d="M18 6L6 18M6 6L18 18"/></svg>
+                </button>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+function showAddContactModal() {
+    showModal(
+        'Adicionar Contato',
+        `
+            <div class="form-group">
+                <label class="form-label">Nome</label>
+                <input type="text" id="newContactName" class="form-input" placeholder="Ex: João Silva">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Email</label>
+                <input type="email" id="newContactEmail" class="form-input" placeholder="Ex: joao@emplo.com">
+            </div>
+        `,
+        async () => {
+            const name = document.getElementById('newContactName').value;
+            const email = document.getElementById('newContactEmail').value;
+
+            if (!name || !email) {
+                showToast('Erro', 'Preencha nome e email', 'warning');
+                return;
+            }
+
+            if (!validateEmail(email)) {
+                showToast('Erro', 'Email inválido', 'warning');
+                return;
+            }
+
+            await addContact(name, email);
+        }
+    );
+}
+
+async function addContact(name, email) {
+    try {
+        const response = await fetch('/api/contacts', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, email })
+        });
+        const result = await response.json();
+
+        if (result.success) {
+            showToast('Sucesso', 'Contato adicionado!', 'success');
+            loadContacts();
+        } else {
+            showToast('Erro', result.message, 'error');
+        }
+    } catch (error) {
+        console.error('Erro ao adicionar contato:', error);
+        showToast('Erro', 'Falha na requisição', 'error');
+    }
+}
+
+async function deleteContact(email) {
+    if (!confirm(`Tem certeza que deseja remover o contato ${email}?`)) return;
+
+    try {
+        const response = await fetch(`/api/contacts/${email}`, {
+            method: 'DELETE'
+        });
+        const result = await response.json();
+
+        if (result.success) {
+            showToast('Sucesso', 'Contato removido', 'success');
+            loadContacts();
+        } else {
+            showToast('Erro', result.message, 'error');
+        }
+    } catch (error) {
+        console.error('Erro ao remover contato:', error);
+        showToast('Erro', 'Falha na requisição', 'error');
+    }
+}
+
+// ===================================
+// REPORTS
+// ===================================
+async function downloadReport() {
+    updateStatus('Gerando relatório...', 'info');
+    showToast('Relatório', 'Preparando relatório PDF de hoje...', 'info');
+
+    try {
+        const response = await fetch('/api/reports/daily');
+
+        if (response.ok) {
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Relatorio_Envios_${new Date().toISOString().split('T')[0]}.pdf`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+
+            showToast('Sucesso', 'Relatório baixado com sucesso!', 'success');
+            updateStatus('Pronto', 'success');
+        } else {
+            const result = await response.json();
+            showToast('Erro', result.message || 'Falha ao gerar relatório', 'error');
+            updateStatus('Erro', 'error');
+        }
+    } catch (error) {
+        console.error('Erro ao baixar relatório:', error);
+        showToast('Erro', 'Erro na conexão com o servidor', 'error');
+        updateStatus('Erro', 'error');
+    }
+}
+
