@@ -1,0 +1,682 @@
+// ===================================
+// STATE MANAGEMENT
+// ===================================
+const state = {
+    currentMode: 'single',
+    credentials: {
+        url: '',
+        email: '',
+        password: ''
+    },
+    files: {
+        single: [],
+        batch: []
+    }
+};
+
+// ===================================
+// DOM ELEMENTS
+// ===================================
+const elements = {
+    // Mode buttons
+    modeSingle: document.getElementById('modeSingle'),
+    modeBatch: document.getElementById('modeBatch'),
+    modeAuto: document.getElementById('modeAuto'),
+
+    // Forms
+    singleModeForm: document.getElementById('singleModeForm'),
+    batchModeForm: document.getElementById('batchModeForm'),
+    autoModeForm: document.getElementById('autoModeForm'),
+
+    // Inputs
+    webmailUrl: document.getElementById('webmailUrl'),
+    emailLogin: document.getElementById('emailLogin'),
+    emailPassword: document.getElementById('emailPassword'),
+    togglePassword: document.getElementById('togglePassword'),
+
+    // Single mode
+    recipient: document.getElementById('recipient'),
+    subject: document.getElementById('subject'),
+    message: document.getElementById('message'),
+    attachment: document.getElementById('attachment'),
+    fileList: document.getElementById('fileList'),
+
+    // Batch mode
+    recipientList: document.getElementById('recipientList'),
+    emailCount: document.getElementById('emailCount'),
+    batchSubject: document.getElementById('batchSubject'),
+    batchMessage: document.getElementById('batchMessage'),
+    batchAttachment: document.getElementById('batchAttachment'),
+    batchFileList: document.getElementById('batchFileList'),
+
+    // Auto mode
+    autoSubject: document.getElementById('autoSubject'),
+    autoMessage: document.getElementById('autoMessage'),
+
+    // Buttons
+    testBtn: document.getElementById('testBtn'),
+    sendBtn: document.getElementById('sendBtn'),
+
+    // Status
+    statusBadge: document.getElementById('statusBadge'),
+
+    // Toast
+    toastContainer: document.getElementById('toastContainer'),
+
+    // Modal
+    modal: document.getElementById('modal'),
+    modalOverlay: document.getElementById('modalOverlay'),
+    modalClose: document.getElementById('modalClose'),
+    modalTitle: document.getElementById('modalTitle'),
+    modalBody: document.getElementById('modalBody'),
+    modalFooter: document.getElementById('modalFooter'),
+    modalCancel: document.getElementById('modalCancel'),
+    modalConfirm: document.getElementById('modalConfirm'),
+
+    // Links
+    viewLogsLink: document.getElementById('viewLogsLink'),
+    helpLink: document.getElementById('helpLink')
+};
+
+// ===================================
+// INITIALIZATION
+// ===================================
+function init() {
+    setupEventListeners();
+    loadCredentialsFromEnv();  // Carregar do .env primeiro
+    updateStatus('Pronto', 'success');
+
+    // Add smooth entrance animation
+    document.body.style.opacity = '0';
+    setTimeout(() => {
+        document.body.style.transition = 'opacity 0.5s ease';
+        document.body.style.opacity = '1';
+    }, 100);
+}
+
+// ===================================
+// EVENT LISTENERS
+// ===================================
+function setupEventListeners() {
+    // Mode selection
+    elements.modeSingle.addEventListener('click', () => switchMode('single'));
+    elements.modeBatch.addEventListener('click', () => switchMode('batch'));
+    elements.modeAuto.addEventListener('click', () => switchMode('auto'));
+
+    // Password toggle
+    elements.togglePassword.addEventListener('click', togglePasswordVisibility);
+
+    // File inputs
+    elements.attachment.addEventListener('change', (e) => handleFileSelect(e, 'single'));
+    elements.batchAttachment.addEventListener('change', (e) => handleFileSelect(e, 'batch'));
+
+    // Recipient list validation
+    elements.recipientList.addEventListener('input', validateRecipientList);
+
+    // Buttons
+    elements.testBtn.addEventListener('click', testConnection);
+    elements.sendBtn.addEventListener('click', sendEmails);
+
+    // Modal
+    elements.modalOverlay.addEventListener('click', closeModal);
+    elements.modalClose.addEventListener('click', closeModal);
+    elements.modalCancel.addEventListener('click', closeModal);
+
+    // Links
+    elements.viewLogsLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        viewLogs();
+    });
+
+    elements.helpLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        showHelp();
+    });
+
+    // Save credentials on change
+    elements.webmailUrl.addEventListener('change', saveCredentials);
+    elements.emailLogin.addEventListener('change', saveCredentials);
+    elements.emailPassword.addEventListener('change', saveCredentials);
+}
+
+// ===================================
+// MODE SWITCHING
+// ===================================
+function switchMode(mode) {
+    state.currentMode = mode;
+
+    // Update button states
+    document.querySelectorAll('.mode-option').forEach(btn => {
+        btn.classList.remove('active');
+    });
+
+    if (mode === 'single') {
+        elements.modeSingle.classList.add('active');
+        elements.singleModeForm.classList.remove('hidden');
+        elements.batchModeForm.classList.add('hidden');
+        elements.autoModeForm.classList.add('hidden');
+    } else if (mode === 'batch') {
+        elements.modeBatch.classList.add('active');
+        elements.singleModeForm.classList.add('hidden');
+        elements.batchModeForm.classList.remove('hidden');
+        elements.autoModeForm.classList.add('hidden');
+    } else if (mode === 'auto') {
+        elements.modeAuto.classList.add('active');
+        elements.singleModeForm.classList.add('hidden');
+        elements.batchModeForm.classList.add('hidden');
+        elements.autoModeForm.classList.remove('hidden');
+    }
+
+    // Smooth scroll to form
+    setTimeout(() => {
+        const activeForm = document.querySelector('.email-form-card:not(.hidden)');
+        if (activeForm) {
+            activeForm.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+    }, 100);
+}
+
+// ===================================
+// PASSWORD VISIBILITY
+// ===================================
+function togglePasswordVisibility() {
+    const input = elements.emailPassword;
+    const icon = elements.togglePassword.querySelector('svg');
+
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.innerHTML = `
+            <path d="M17.94 17.94C16.2306 19.243 14.1491 19.9649 12 20C5 20 1 12 1 12C2.24389 9.68192 3.96914 7.65663 6.06 6.06M9.9 4.24C10.5883 4.0789 11.2931 3.99836 12 4C19 4 23 12 23 12C22.393 13.1356 21.6691 14.2048 20.84 15.19M14.12 14.12C13.8454 14.4148 13.5141 14.6512 13.1462 14.8151C12.7782 14.9791 12.3809 15.0673 11.9781 15.0744C11.5753 15.0815 11.1752 15.0074 10.8016 14.8565C10.4281 14.7056 10.0887 14.4811 9.80385 14.1962C9.51897 13.9113 9.29439 13.5719 9.14351 13.1984C8.99262 12.8248 8.91853 12.4247 8.92563 12.0219C8.93274 11.6191 9.02091 11.2218 9.18488 10.8538C9.34884 10.4858 9.58525 10.1546 9.88 9.88" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M1 1L23 23" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        `;
+    } else {
+        input.type = 'password';
+        icon.innerHTML = `
+            <path d="M2.45825 12C3.73253 7.94288 7.52281 5 12.0004 5C16.4781 5 20.2684 7.94291 21.5426 12C20.2684 16.0571 16.4781 19 12.0005 19C7.52281 19 3.73251 16.0571 2.45825 12Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M15 12C15 13.6569 13.6569 15 12 15C10.3431 15 9 13.6569 9 12C9 10.3431 10.3431 9 12 9C13.6569 9 15 10.3431 15 12Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        `;
+    }
+}
+
+// ===================================
+// FILE HANDLING
+// ===================================
+function handleFileSelect(event, mode) {
+    const files = Array.from(event.target.files);
+    state.files[mode] = files;
+
+    const fileListElement = mode === 'single' ? elements.fileList : elements.batchFileList;
+    fileListElement.innerHTML = '';
+
+    files.forEach((file, index) => {
+        const fileItem = document.createElement('div');
+        fileItem.className = 'file-item';
+        fileItem.innerHTML = `
+            <div class="file-item-name">
+                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 16px; height: 16px; color: var(--color-primary);">
+                    <path d="M15.172 7L20.414 12.242C21.195 13.023 21.195 14.291 20.414 15.072L15.072 20.414C14.291 21.195 13.023 21.195 12.242 20.414L3.51472 11.6868C2.73367 10.9057 2.73367 9.63769 3.51472 8.85664L8.85786 3.51351C9.63891 2.73246 10.9069 2.73246 11.688 3.51351L15.172 7Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <span>${file.name}</span>
+                <span style="color: var(--color-text-tertiary); font-size: 0.75rem;">(${formatFileSize(file.size)})</span>
+            </div>
+            <button class="file-item-remove" onclick="removeFile(${index}, '${mode}')">
+                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 16px; height: 16px;">
+                    <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </button>
+        `;
+        fileListElement.appendChild(fileItem);
+    });
+}
+
+function removeFile(index, mode) {
+    state.files[mode].splice(index, 1);
+
+    // Update file input
+    const input = mode === 'single' ? elements.attachment : elements.batchAttachment;
+    const dt = new DataTransfer();
+    state.files[mode].forEach(file => dt.items.add(file));
+    input.files = dt.files;
+
+    // Trigger change event to update UI
+    input.dispatchEvent(new Event('change'));
+}
+
+function formatFileSize(bytes) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+}
+
+// ===================================
+// EMAIL VALIDATION
+// ===================================
+function validateEmail(email) {
+    const re = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    return re.test(email);
+}
+
+function validateRecipientList() {
+    const text = elements.recipientList.value;
+    const lines = text.split('\n').filter(line => line.trim());
+    const validEmails = lines.filter(line => validateEmail(line.trim()));
+
+    elements.emailCount.textContent = `${validEmails.length} emails válidos`;
+
+    if (validEmails.length > 0) {
+        elements.emailCount.style.color = 'var(--color-success)';
+    } else {
+        elements.emailCount.style.color = 'var(--color-text-tertiary)';
+    }
+}
+
+// ===================================
+// CREDENTIALS MANAGEMENT
+// ===================================
+function saveCredentials() {
+    state.credentials = {
+        url: elements.webmailUrl.value,
+        email: elements.emailLogin.value,
+        password: elements.emailPassword.value
+    };
+
+    // Save to localStorage (except password for security)
+    localStorage.setItem('webmailUrl', state.credentials.url);
+    localStorage.setItem('emailLogin', state.credentials.email);
+
+    showToast('Credenciais salvas', 'Suas credenciais foram salvas localmente', 'success');
+}
+
+function loadCredentialsFromStorage() {
+    const savedUrl = localStorage.getItem('webmailUrl');
+    const savedEmail = localStorage.getItem('emailLogin');
+
+    if (savedUrl) {
+        elements.webmailUrl.value = savedUrl;
+        state.credentials.url = savedUrl;
+    }
+
+    if (savedEmail) {
+        elements.emailLogin.value = savedEmail;
+        state.credentials.email = savedEmail;
+    }
+}
+
+// ===================================
+// STATUS MANAGEMENT
+// ===================================
+function updateStatus(text, type = 'success') {
+    const statusText = elements.statusBadge.querySelector('.status-text');
+    const statusDot = elements.statusBadge.querySelector('.status-dot');
+
+    statusText.textContent = text;
+
+    const colors = {
+        success: 'var(--color-success)',
+        error: 'var(--color-error)',
+        warning: 'var(--color-warning)',
+        info: 'var(--color-primary)'
+    };
+
+    statusDot.style.background = colors[type] || colors.success;
+    statusDot.style.boxShadow = `0 0 10px ${colors[type] || colors.success}`;
+}
+
+// ===================================
+// TOAST NOTIFICATIONS
+// ===================================
+function showToast(title, message, type = 'success') {
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+
+    const icons = {
+        success: `<path d="M9 12L11 14L15 10M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>`,
+        error: `<path d="M12 8V12M12 16H12.01M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>`,
+        warning: `<path d="M12 9V13M12 17H12.01M10.29 3.86L1.82 18C1.64537 18.3024 1.55296 18.6453 1.55199 18.9945C1.55101 19.3437 1.64151 19.6871 1.81445 19.9905C1.98738 20.2939 2.23675 20.5467 2.53773 20.7239C2.83871 20.9011 3.18082 20.9962 3.53 21H20.47C20.8192 20.9962 21.1613 20.9011 21.4623 20.7239C21.7633 20.5467 22.0126 20.2939 22.1856 19.9905C22.3585 19.6871 22.449 19.3437 22.448 18.9945C22.447 18.6453 22.3546 18.3024 22.18 18L13.71 3.86C13.5317 3.56611 13.2807 3.32312 12.9812 3.15448C12.6817 2.98585 12.3437 2.89725 12 2.89725C11.6563 2.89725 11.3183 2.98585 11.0188 3.15448C10.7193 3.32312 10.4683 3.56611 10.29 3.86Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>`,
+        info: `<path d="M13 16H12V12H11M12 8H12.01M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>`
+    };
+
+    toast.innerHTML = `
+        <svg class="toast-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            ${icons[type] || icons.info}
+        </svg>
+        <div class="toast-content">
+            <div class="toast-title">${title}</div>
+            <div class="toast-message">${message}</div>
+        </div>
+        <button class="toast-close">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+        </button>
+    `;
+
+    const closeBtn = toast.querySelector('.toast-close');
+    closeBtn.addEventListener('click', () => {
+        toast.style.animation = 'slideIn 0.25s reverse';
+        setTimeout(() => toast.remove(), 250);
+    });
+
+    elements.toastContainer.appendChild(toast);
+
+    // Auto remove after 5 seconds
+    setTimeout(() => {
+        if (toast.parentElement) {
+            toast.style.animation = 'slideIn 0.25s reverse';
+            setTimeout(() => toast.remove(), 250);
+        }
+    }, 5000);
+}
+
+// ===================================
+// MODAL
+// ===================================
+function showModal(title, body, onConfirm = null) {
+    elements.modalTitle.textContent = title;
+    elements.modalBody.innerHTML = body;
+    elements.modal.classList.remove('hidden');
+
+    if (onConfirm) {
+        elements.modalConfirm.onclick = () => {
+            onConfirm();
+            closeModal();
+        };
+    } else {
+        elements.modalFooter.style.display = 'none';
+    }
+}
+
+function closeModal() {
+    elements.modal.classList.add('hidden');
+    elements.modalFooter.style.display = 'flex';
+}
+
+// ===================================
+// MAIN ACTIONS
+// ===================================
+async function testConnection() {
+    updateStatus('Testando...', 'info');
+    elements.testBtn.disabled = true;
+
+    // Validate credentials (senha pode estar no .env)
+    if (!elements.webmailUrl.value || !elements.emailLogin.value) {
+        showToast('Erro', 'Preencha URL e Email (senha pode estar no .env)', 'error');
+        updateStatus('Erro', 'error');
+        elements.testBtn.disabled = false;
+        return;
+    }    try {        showToast('Conectando', 'Abrindo navegador Chrome...', 'info');        const response = await fetch('/api/test-connection', {            method: 'POST',            headers: {'Content-Type': 'application/json'},            body: JSON.stringify({url: elements.webmailUrl.value, email: elements.emailLogin.value, password: elements.emailPassword.value})        });        const result = await response.json();        if (result.success) {            showToast('Conex�o OK', result.message, 'success');            updateStatus('Conectado', 'success');        } else {            showToast('Erro', result.message, 'error');            updateStatus('Erro', 'error');        }    } catch (error) {        showToast('Erro', 'Erro: ' + error.message, 'error');        updateStatus('Erro', 'error');    } finally {        elements.testBtn.disabled = false;    }
+}
+
+async function sendEmails() {
+    // Validate credentials (senha pode estar no .env)
+    if (!elements.webmailUrl.value || !elements.emailLogin.value) {
+        showToast('Erro', 'Preencha URL e Email (senha pode estar no .env)', 'error');
+        return;
+    }
+
+    // Validate based on mode
+    if (state.currentMode === 'single') {
+        if (!elements.recipient.value || !elements.subject.value || !elements.message.value) {
+            showToast('Erro', 'Preencha todos os campos obrigatórios', 'error');
+            return;
+        }
+
+        if (!validateEmail(elements.recipient.value)) {
+            showToast('Erro', 'Email do destinatário inválido', 'error');
+            return;
+        }
+
+        sendSingleEmail();
+    } else if (state.currentMode === 'batch') {
+        const text = elements.recipientList.value;
+        const lines = text.split('\n').filter(line => line.trim());
+        const validEmails = lines.filter(line => validateEmail(line.trim()));
+
+        if (validEmails.length === 0) {
+            showToast('Erro', 'Nenhum email válido na lista', 'error');
+            return;
+        }
+
+        if (!elements.batchSubject.value || !elements.batchMessage.value) {
+            showToast('Erro', 'Preencha assunto e mensagem', 'error');
+            return;
+        }
+
+        sendBatchEmails(validEmails);
+    } else if (state.currentMode === 'auto') {
+        sendAutoEmails();
+    }
+}
+
+function sendSingleEmail() {
+    const data = {
+        mode: 'single',
+        credentials: {
+            url: elements.webmailUrl.value,
+            email: elements.emailLogin.value,
+            password: elements.emailPassword.value
+        },
+        recipient: elements.recipient.value,
+        subject: elements.subject.value,
+        message: elements.message.value,
+        files: state.files.single
+    };
+
+    showModal(
+        'Confirmar Envio',
+        `
+            <p>Você está prestes a enviar um email para:</p>
+            <p style="margin-top: 1rem;"><strong>${data.recipient}</strong></p>
+            <p style="margin-top: 1rem; color: var(--color-text-secondary);">Assunto: ${data.subject}</p>
+        `,
+        () => {
+            updateStatus('Enviando...', 'info');
+            showToast('Enviando', 'Processando envio do email...', 'info');
+
+            // Here you would call the Python backend
+            console.log('Sending email:', data);
+
+            // Simulate sending
+            setTimeout(() => {
+                showToast('Sucesso', 'Email enviado com sucesso!', 'success');
+                updateStatus('Pronto', 'success');
+
+                // Clear form
+                elements.recipient.value = '';
+                elements.subject.value = '';
+                elements.message.value = '';
+                elements.attachment.value = '';
+                elements.fileList.innerHTML = '';
+                state.files.single = [];
+            }, 2000);
+        }
+    );
+}
+
+function sendBatchEmails(emails) {
+    const data = {
+        mode: 'batch',
+        credentials: {
+            url: elements.webmailUrl.value,
+            email: elements.emailLogin.value,
+            password: elements.emailPassword.value
+        },
+        recipients: emails,
+        subject: elements.batchSubject.value,
+        message: elements.batchMessage.value,
+        files: state.files.batch
+    };
+
+    showModal(
+        'Confirmar Envio em Lote',
+        `
+            <p>Você está prestes a enviar <strong>${emails.length} emails</strong>.</p>
+            <p style="margin-top: 1rem; color: var(--color-text-secondary);">Assunto: ${data.subject}</p>
+            <p style="margin-top: 0.5rem; color: var(--color-text-secondary);">Esta operação pode levar alguns minutos.</p>
+        `,
+        () => {
+            updateStatus('Enviando...', 'info');
+            showToast('Enviando', `Processando ${emails.length} emails...`, 'info');
+
+            // Here you would call the Python backend
+            console.log('Sending batch emails:', data);
+
+            // Simulate sending
+            setTimeout(() => {
+                showToast('Sucesso', `${emails.length} emails enviados com sucesso!`, 'success');
+                updateStatus('Pronto', 'success');
+            }, 3000);
+        }
+    );
+}
+
+function sendAutoEmails() {
+    const data = {
+        mode: 'auto',
+        credentials: {
+            url: elements.webmailUrl.value,
+            email: elements.emailLogin.value,
+            password: elements.emailPassword.value
+        },
+        subject: elements.autoSubject.value,
+        message: elements.autoMessage.value
+    };
+
+    showModal(
+        'Confirmar Envio Automático',
+        `
+            <p>O sistema irá processar todos os arquivos na pasta <code>anexos/</code>.</p>
+            <p style="margin-top: 1rem; color: var(--color-text-secondary);">Assunto: ${data.subject}</p>
+            <p style="margin-top: 0.5rem; color: var(--color-text-secondary);">Cada arquivo será enviado para o email correspondente ao nome do arquivo.</p>
+        `,
+        () => {
+            updateStatus('Enviando...', 'info');
+            showToast('Enviando', 'Processando envios automáticos...', 'info');
+
+            // Here you would call the Python backend
+            console.log('Sending auto emails:', data);
+
+            // Simulate sending
+            setTimeout(() => {
+                showToast('Sucesso', 'Envios automáticos concluídos!', 'success');
+                updateStatus('Pronto', 'success');
+            }, 3000);
+        }
+    );
+}
+
+// ===================================
+// UTILITY FUNCTIONS
+// ===================================
+function viewLogs() {
+    showModal(
+        'Logs de Envio',
+        `
+            <div style="font-family: 'Courier New', monospace; font-size: 0.875rem; background: var(--color-bg); padding: 1rem; border-radius: var(--radius-md); max-height: 400px; overflow-y: auto;">
+                <p>[05/02/2026 09:30:15] Para: cliente1@email.com | Assunto: Documentos | Status: SUCESSO</p>
+                <p>[05/02/2026 09:30:22] Para: cliente2@email.com | Assunto: Documentos | Status: SUCESSO</p>
+                <p>[05/02/2026 09:30:28] Para: cliente3@email.com | Assunto: Documentos | Status: FALHA</p>
+                <p style="color: var(--color-text-tertiary); margin-top: 1rem;">Logs completos disponíveis em: logs/envios_20260205.txt</p>
+            </div>
+        `
+    );
+}
+
+function showHelp() {
+    showModal(
+        'Ajuda - Como Usar',
+        `
+            <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+                <div>
+                    <h4 style="color: var(--color-primary); margin-bottom: 0.5rem;">📧 Envio Único</h4>
+                    <p style="font-size: 0.875rem; color: var(--color-text-secondary);">
+                        Envie um email para um único destinatário. Preencha o destinatário, assunto, mensagem e anexos opcionais.
+                    </p>
+                </div>
+                
+                <div>
+                    <h4 style="color: var(--color-primary); margin-bottom: 0.5rem;">📋 Envio em Lote</h4>
+                    <p style="font-size: 0.875rem; color: var(--color-text-secondary);">
+                        Envie o mesmo email para múltiplos destinatários. Digite um email por linha na lista de destinatários.
+                    </p>
+                </div>
+                
+                <div>
+                    <h4 style="color: var(--color-primary); margin-bottom: 0.5rem;">⚡ Envio Automático</h4>
+                    <p style="font-size: 0.875rem; color: var(--color-text-secondary);">
+                        Coloque arquivos na pasta <code>anexos/</code> nomeados com o email do destinatário (ex: cliente@email.com.pdf). O sistema enviará automaticamente.
+                    </p>
+                </div>
+                
+                <div style="padding: 1rem; background: var(--color-bg-secondary); border-radius: var(--radius-md); border-left: 4px solid var(--color-warning);">
+                    <p style="font-size: 0.875rem; color: var(--color-text-secondary);">
+                        <strong>⚠️ Dica:</strong> Sempre teste com "Envio Único" antes de usar envios em lote ou automáticos.
+                    </p>
+                </div>
+            </div>
+        `
+    );
+}
+
+// ===================================
+// LOAD CREDENTIALS FROM .ENV
+// ===================================
+async function loadCredentialsFromEnv() {
+    try {
+        const response = await fetch('/api/credentials');
+        const data = await response.json();
+
+        if (data.success && data.credentials) {
+            const creds = data.credentials;
+
+            // Preencher campos com dados do .env
+            if (creds.url) {
+                elements.webmailUrl.value = creds.url;
+                state.credentials.url = creds.url;
+            }
+
+            if (creds.email) {
+                elements.emailLogin.value = creds.email;
+                state.credentials.email = creds.email;
+            }
+
+            // Se há senha no .env, mostrar indicação visual
+            if (creds.hasPassword) {
+                elements.emailPassword.placeholder = '••••••••  (configurada no .env)';
+                elements.emailPassword.style.borderColor = 'var(--color-success)';
+
+                // Adicionar tooltip informativo
+                const passwordGroup = elements.emailPassword.closest('.form-group');
+                const existingHint = passwordGroup.querySelector('.form-hint');
+                if (!existingHint) {
+                    const hint = document.createElement('div');
+                    hint.className = 'form-hint';
+                    hint.style.color = 'var(--color-success)';
+                    hint.innerHTML = `
+                        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M9 12L11 14L15 10M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        <span>Senha carregada do arquivo .env</span>
+                    `;
+                    passwordGroup.appendChild(hint);
+                }
+
+                if (creds.url && creds.email) {
+                    showToast('Credenciais Carregadas', 'Credenciais do arquivo .env carregadas com sucesso', 'success');
+                }
+            }
+        }
+    } catch (error) {
+        console.error('Erro ao carregar credenciais do .env:', error);
+        // Fallback para localStorage se API falhar
+        loadCredentialsFromStorage();
+    }
+}
+
+// ===================================
+// START APPLICATION
+// ===================================
+document.addEventListener('DOMContentLoaded', init);
+

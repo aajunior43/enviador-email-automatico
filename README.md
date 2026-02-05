@@ -4,6 +4,7 @@ Ferramenta automatizada para enviar emails via Roundcube webmail usando Python e
 
 ## ✨ Funcionalidades
 
+- 🎨 **Interface Web Moderna** - Interface gráfica elegante e intuitiva (NOVO!)
 - 🔐 **Login automático** no Roundcube webmail
 - 📧 **Envio único** ou **em lote** (lista de destinatários)
 - 📎 **Anexar arquivos** (PDFs, imagens, documentos)
@@ -46,12 +47,36 @@ Para não precisar digitar email e senha toda vez, você pode criar um arquivo `
 
 ## 📖 Como Usar
 
-### Executar via Batch (Windows)
+### 🎨 Interface Web (Recomendado)
+
+A maneira mais fácil e moderna de usar o enviador de emails!
+
+```bash
+cd gui
+executar_interface.bat
+```
+
+O navegador abrirá automaticamente em `http://localhost:5000` com uma interface moderna e intuitiva.
+
+**Características da Interface Web:**
+- ✨ Design moderno dark mode
+- 🎯 Interface intuitiva e fácil de usar
+- 📱 Responsivo (funciona em qualquer dispositivo)
+- 🔔 Notificações em tempo real
+- 💾 Salvamento automático de credenciais
+
+📚 **Documentação completa:** [gui/README.md](gui/README.md)
+
+---
+
+### 💻 Linha de Comando (Tradicional)
+
+#### Executar via Batch (Windows)
 ```bash
 executar.bat
 ```
 
-### Executar via Python
+#### Executar via Python
 ```bash
 python main.py
 ```

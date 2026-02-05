@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enviador de Email Automático - Roundcube</title>
+    <meta name="description" content="Interface moderna para automação de envio de emails via Roundcube webmail">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+</head>
+
+<body>
+    <!-- Background Effects -->
+    <div class="bg-gradient"></div>
+    <div class="bg-grid"></div>
+
+    <!-- Main Container -->
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="logo">
+                <svg class="logo-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path
+                        d="M3 8L10.89 13.26C11.23 13.47 11.61 13.59 12 13.59C12.39 13.59 12.77 13.47 13.11 13.26L21 8M5 19H19C19.5304 19 20.0391 18.7893 20.4142 18.4142C20.7893 18.0391 21 17.5304 21 17V7C21 6.46957 20.7893 5.96086 20.4142 5.58579C20.0391 5.21071 19.5304 5 19 5H5C4.46957 5 3.96086 5.21071 3.58579 5.58579C3.21071 5.96086 3 6.46957 3 7V17C3 17.5304 3.21071 18.0391 3.58579 18.4142C3.96086 18.7893 4.46957 19 5 19Z"
+                        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+                <div>
+                    <h1 class="logo-title">Email Automático</h1>
+                    <p class="logo-subtitle">Roundcube Webmail</p>
+                </div>
+            </div>
+            <div class="status-badge" id="statusBadge">
+                <span class="status-dot"></span>
+                <span class="status-text">Pronto</span>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Credentials Section -->
+            <section class="card credentials-card" id="credentialsSection">
+                <div class="card-header">
+                    <div class="card-icon">
+                        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path
+                                d="M12 15V17M6 21H18C19.1046 21 20 20.1046 20 19V13C20 11.8954 19.1046 11 18 11H6C4.89543 11 4 11.8954 4 13V19C4 20.1046 4.89543 21 6 21ZM16 11V7C16 5.93913 15.5786 4.92172 14.8284 4.17157C14.0783 3.42143 13.0609 3 12 3C10.9391 3 9.92172 3.42143 9.17157 4.17157C8.42143 4.92172 8 5.93913 8 7V11H16Z"
+                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>
+                    </div>
+                    <div>
+                        <h2 class="card-title">Credenciais de Acesso</h2>
+                        <p class="card-description">Configure suas credenciais do webmail Roundcube</p>
+                    </div>
+                </div>
+
+                <div class="form-grid">
+                    <div class="form-group full-width">
+                        <label for="webmailUrl" class="form-label">
+                            <svg class="label-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path
+                                    d="M13.8284 10.1716C12.2663 8.60948 9.73367 8.60948 8.17157 10.1716C6.60948 11.7337 6.60948 14.2663 8.17157 15.8284C9.73367 17.3905 12.2663 17.3905 13.8284 15.8284C15.3905 14.2663 15.3905 11.7337 13.8284 10.1716ZM13.8284 10.1716L21 3M15 9L21 3L15 9ZM18 6L21 3L18 6Z"
+                                    stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round" />
+                            </svg>
+                            URL do Webmail
+                        </label>
+                        <input type="url" id="webmailUrl" class="form-input"
+                            placeholder="https://webmail.exemplo.com.br/roundcube"
+                            value="https://webmail.instaremail4.com.br/cpsess1913979313/3rdparty/roundcube/?_task=mail&_mbox=INBOX">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="emailLogin" class="form-label">
+                            <svg class="label-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path
+                                    d="M16 7C16 9.20914 14.2091 11 12 11C9.79086 11 8 9.20914 8 7C8 4.79086 9.79086 3 12 3C14.2091 3 16 4.79086 16 7Z"
+                                    stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round" />
+                                <path d="M12 14C8.13401 14 5 17.134 5 21H19C19 17.134 15.866 14 12 14Z"
+                                    stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round" />
+                            </svg>
+                            Email de Login
+                        </label>
+                        <input type="email" id="emailLogin" class="form-input" placeholder="seu@email.com">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="emailPassword" class="form-label">
+                            <svg class="label-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path
+                                    d="M15 12C15 13.6569 13.6569 15 12 15C10.3431 15 9 13.6569 9 12C9 10.3431 10.3431 9 12 9C13.6569 9 15 10.3431 15 12Z"
+                                    stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round" />
+                                <path
+                                    d="M2.45825 12C3.73253 7.94288 7.52281 5 12.0004 5C16.4781 5 20.2684 7.94291 21.5426 12C20.2684 16.0571 16.4781 19 12.0005 19C7.52281 19 3.73251 16.0571 2.45825 12Z"
+                                    stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round" />
+                            </svg>
+                            Senha
+                        </label>
+                        <div class="password-input-wrapper">
+                            <input type="password" id="emailPassword" class="form-input" placeholder="••••••••">
+                            <button type="button" class="password-toggle" id="togglePassword">
+                                <svg class="eye-icon" viewBox="0 0 24 24" fill="none"
+                                    xmlns="http://www.w3.org/2000/svg">
+                                    <path
+                                        d="M2.45825 12C3.73253 7.94288 7.52281 5 12.0004 5C16.4781 5 20.2684 7.94291 21.5426 12C20.2684 16.0571 16.4781 19 12.0005 19C7.52281 19 3.73251 16.0571 2.45825 12Z"
+                                        stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                        stroke-linejoin="round" />
+                                    <path
+                                        d="M15 12C15 13.6569 13.6569 15 12 15C10.3431 15 9 13.6569 9 12C9 10.3431 10.3431 9 12 9C13.6569 9 15 10.3431 15 12Z"
+                                        stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                        stroke-linejoin="round" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Mode Selection -->
+            <section class="card mode-card">
+                <div class="card-header">
+                    <div class="card-icon">
+                        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path
+                                d="M9 5H7C5.89543 5 5 5.89543 5 7V19C5 20.1046 5.89543 21 7 21H17C18.1046 21 19 20.1046 19 19V7C19 5.89543 18.1046 5 17 5H15M9 5C9 6.10457 9.89543 7 11 7H13C14.1046 7 15 6.10457 15 5M9 5C9 3.89543 9.89543 3 11 3H13C14.1046 3 15 3.89543 15 4"
+                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>
+                    </div>
+                    <div>
+                        <h2 class="card-title">Modo de Envio</h2>
+                        <p class="card-description">Escolha como deseja enviar seus emails</p>
+                    </div>
+                </div>
+
+                <div class="mode-grid">
+                    <button class="mode-option active" data-mode="single" id="modeSingle">
+                        <div class="mode-icon">
+                            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path
+                                    d="M3 8L10.89 13.26C11.23 13.47 11.61 13.59 12 13.59C12.39 13.59 12.77 13.47 13.11 13.26L21 8M5 19H19C19.5304 19 20.0391 18.7893 20.4142 18.4142C20.7893 18.0391 21 17.5304 21 17V7C21 6.46957 20.7893 5.96086 20.4142 5.58579C20.0391 5.21071 19.5304 5 19 5H5C4.46957 5 3.96086 5.21071 3.58579 5.58579C3.21071 5.96086 3 6.46957 3 7V17C3 17.5304 3.21071 18.0391 3.58579 18.4142C3.96086 18.7893 4.46957 19 5 19Z"
+                                    stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round" />
+                            </svg>
+                        </div>
+                        <h3 class="mode-title">Envio Único</h3>
+                        <p class="mode-description">Enviar para um destinatário específico</p>
+                    </button>
+
+                    <button class="mode-option" data-mode="batch" id="modeBatch">
+                        <div class="mode-icon">
+                            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path
+                                    d="M9 12H15M9 16H15M17 21H7C5.89543 21 5 20.1046 5 19V5C5 3.89543 5.89543 3 7 3H12.5858C12.851 3 13.1054 3.10536 13.2929 3.29289L18.7071 8.70711C18.8946 8.89464 19 9.149 19 9.41421V19C19 20.1046 18.1046 21 17 21Z"
+                                    stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round" />
+                            </svg>
+                        </div>
+                        <h3 class="mode-title">Envio em Lote</h3>
+                        <p class="mode-description">Enviar para múltiplos destinatários</p>
+                    </button>
+
+                    <button class="mode-option" data-mode="organizer" id="modeOrganizer">
+                        <div class="mode-icon">
+                            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"
+                                    stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round" />
+                            </svg>
+                        </div>
+                        <h3 class="mode-title">Organizar</h3>
+                        <p class="mode-description">Preparar anexos</p>
+                    </button>
+
+                    <button class="mode-option" data-mode="auto" id="modeAuto">
+                        <div class="mode-icon">
+                            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M13 10V3L4 14H11V21L20 10H13Z" stroke="currentColor" stroke-width="2"
+                                    stroke-linecap="round" stroke-linejoin="round" />
+                            </svg>
+                        </div>
+                        <h3 class="mode-title">Automático</h3>
+                        <p class="mode-description">Baseado em arquivos na pasta</p>
+                    </button>
+                </div>
+            </section>
+
+            <!-- Email Form - Single Mode -->
+            <section class="card email-form-card" id="singleModeForm">
+                <div class="card-header">
+                    <div class="card-icon">
+                        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path
+                                d="M11 5H6C4.89543 5 4 5.89543 4 7V17C4 18.1046 4.89543 19 6 19H16C17.1046 19 18 18.1046 18 17V12M18.5 4.5C18.7652 4.23478 19.1174 4.08539 19.4854 4.08539C19.8534 4.08539 20.2056 4.23478 20.4708 4.5C20.7361 4.76522 20.8854 5.11739 20.8854 5.48536C20.8854 5.85334 20.7361 6.20551 20.4708 6.47073L11.25 15.6929L8 16.5L8.80711 13.25L18.5 4.5Z"
+                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>
+                    </div>
+                    <div>
+                        <h2 class="card-title">Dados do Email</h2>
+                        <p class="card-description">Preencha as informações do email a ser enviado</p>
+                    </div>
+                </div>
+
+                <div class="form-grid">
+                    <div class="form-group full-width">
+                        <label for="recipient" class="form-label">
+                            <svg class="label-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path
+                                    d="M16 7C16 9.20914 14.2091 11 12 11C9.79086 11 8 9.20914 8 7C8 4.79086 9.79086 3 12 3C14.2091 3 16 4.79086 16 7Z"
+                                    stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round" />
+                                <path d="M12 14C8.13401 14 5 17.134 5 21H19C19 17.134 15.866 14 12 14Z"
+                                    stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round" />
+                            </svg>
+                            Destinatário
+                        </label>
+                        <input type="email" id="recipient" class="form-input" placeholder="destinatario@exemplo.com">
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label for="subject" class="form-label">
+                            <svg class="label-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M7 8H17M7 12H17M7 16H12" stroke="currentColor" stroke-width="2"
+                                    stroke-linecap="round" stroke-linejoin="round" />
+                            </svg>
+                            Assunto
+                        </label>
+                        <input type="text" id="subject" class="form-input" placeholder="Digite o assunto do email">
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label for="message" class="form-label">
+                            <svg class="label-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path
+                                    d="M8 10H16M8 14H11M6 21H18C19.1046 21 20 20.1046 20 19V5C20 3.89543 19.1046 3 18 3H6C4.89543 3 4 3.89543 4 5V19C4 20.1046 4.89543 21 6 21Z"
+                                    stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round" />
+                            </svg>
+                            Mensagem
+                        </label>
+                        <textarea id="message" class="form-textarea" rows="6"
+                            placeholder="Digite a mensagem do email..."></textarea>
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label for="attachment" class="form-label">
+                            <svg class="label-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path
+                                    d="M15.172 7L20.414 12.242C21.195 13.023 21.195 14.291 20.414 15.072L15.072 20.414C14.291 21.195 13.023 21.195 12.242 20.414L3.51472 11.6868C2.73367 10.9057 2.73367 9.63769 3.51472 8.85664L8.85786 3.51351C9.63891 2.73246 10.9069 2.73246 11.688 3.51351L15.172 7ZM15.172 7L18.364 3.808C19.145 3.027 20.413 3.027 21.194 3.808C21.975 4.589 21.975 5.857 21.194 6.638L18.002 9.83"
+                                    stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round" />
+                            </svg>
+                            Anexo (opcional)
+                        </label>
+                        <div class="file-input-wrapper">
+                            <input type="file" id="attachment" class="file-input" multiple>
+                            <label for="attachment" class="file-input-label">
+                                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path
+                                        d="M7 18C7 19.1046 7.89543 20 9 20H15C16.1046 20 17 19.1046 17 18V9C17 7.89543 16.1046 7 15 7H9C7.89543 7 7 7.89543 7 9V18Z"
+                                        stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                        stroke-linejoin="round" />
+                                    <path d="M14 7V5C14 3.89543 13.1046 3 12 3C10.8954 3 10 3.89543 10 5V7"
+                                        stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                        stroke-linejoin="round" />
+                                </svg>
+                                <span>Escolher arquivo(s)</span>
+                            </label>
+                            <div class="file-list" id="fileList"></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Batch Mode Form -->
+            <section class="card email-form-card hidden" id="batchModeForm">
+                <div class="card-header">
+                    <div class="card-icon">
+                        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path
+                                d="M9 12H15M9 16H15M17 21H7C5.89543 21 5 20.1046 5 19V5C5 3.89543 5.89543 3 7 3H12.5858C12.851 3 13.1054 3.10536 13.2929 3.29289L18.7071 8.70711C18.8946 8.89464 19 9.149 19 9.41421V19C19 20.1046 18.1046 21 17 21Z"
+                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>
+                    </div>
+                    <div>
+                        <h2 class="card-title">Envio em Lote</h2>
+                        <p class="card-description">Configure o envio para múltiplos destinatários</p>
+                    </div>
+                </div>
+
+                <div class="form-grid">
+                    <div class="form-group full-width">
+                        <label for="recipientList" class="form-label">
+                            <svg class="label-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path
+                                    d="M17 21V19C17 17.9391 16.5786 16.9217 15.8284 16.1716C15.0783 15.4214 14.0609 15 13 15H5C3.93913 15 2.92172 15.4214 2.17157 16.1716C1.42143 16.9217 1 17.9391 1 19V21M23 21V19C22.9993 18.1137 22.7044 17.2528 22.1614 16.5523C21.6184 15.8519 20.8581 15.3516 20 15.13M16 3.13C16.8604 3.3503 17.623 3.8507 18.1676 4.55231C18.7122 5.25392 19.0078 6.11683 19.0078 7.005C19.0078 7.89317 18.7122 8.75608 18.1676 9.45769C17.623 10.1593 16.8604 10.6597 16 10.88M13 7C13 9.20914 11.2091 11 9 11C6.79086 11 5 9.20914 5 7C5 4.79086 6.79086 3 9 3C11.2091 3 13 4.79086 13 7Z"
+                                    stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round" />
+                            </svg>
+                            Lista de Destinatários
+                        </label>
+                        <textarea id="recipientList" class="form-textarea" rows="6"
+                            placeholder="Digite um email por linha:&#10;email1@exemplo.com&#10;email2@exemplo.com&#10;email3@exemplo.com"></textarea>
+                        <div class="form-hint">
+                            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path
+                                    d="M13 16H12V12H11M12 8H12.01M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z"
+                                    stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round" />
+                            </svg>
+                            <span id="emailCount">0 emails válidos</span>
+                        </div>
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label for="batchSubject" class="form-label">
+                            <svg class="label-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M7 8H17M7 12H17M7 16H12" stroke="currentColor" stroke-width="2"
+                                    stroke-linecap="round" stroke-linejoin="round" />
+                            </svg>
+                            Assunto (mesmo para todos)
+                        </label>
+                        <input type="text" id="batchSubject" class="form-input" placeholder="Digite o assunto do email">
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label for="batchMessage" class="form-label">
+                            <svg class="label-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path
+                                    d="M8 10H16M8 14H11M6 21H18C19.1046 21 20 20.1046 20 19V5C20 3.89543 19.1046 3 18 3H6C4.89543 3 4 3.89543 4 5V19C4 20.1046 4.89543 21 6 21Z"
+                                    stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round" />
+                            </svg>
+                            Mensagem (mesma para todos)
+                        </label>
+                        <textarea id="batchMessage" class="form-textarea" rows="6"
+                            placeholder="Digite a mensagem do email..."></textarea>
+                    </div>
+
+                    <div class="form-group full-width">
+                        <label for="batchAttachment" class="form-label">
+                            <svg class="label-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path
+                                    d="M15.172 7L20.414 12.242C21.195 13.023 21.195 14.291 20.414 15.072L15.072 20.414C14.291 21.195 13.023 21.195 12.242 20.414L3.51472 11.6868C2.73367 10.9057 2.73367 9.63769 3.51472 8.85664L8.85786 3.51351C9.63891 2.73246 10.9069 2.73246 11.688 3.51351L15.172 7ZM15.172 7L18.364 3.808C19.145 3.027 20.413 3.027 21.194 3.808C21.975 4.589 21.975 5.857 21.194 6.638L18.002 9.83"
+                                    stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round" />
+                            </svg>
+                            Anexo (opcional, mesmo para todos)
+                        </label>
+                        <div class="file-input-wrapper">
+                            <input type="file" id="batchAttachment" class="file-input" multiple>
+                            <label for="batchAttachment" class="file-input-label">
+                                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path
+                                        d="M7 18C7 19.1046 7.89543 20 9 20H15C16.1046 20 17 19.1046 17 18V9C17 7.89543 16.1046 7 15 7H9C7.89543 7 7 7.89543 7 9V18Z"
+                                        stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                        stroke-linejoin="round" />
+                                    <path d="M14 7V5C14 3.89543 13.1046 3 12 3C10.8954 3 10 3.89543 10 5V7"
+                                        stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                        stroke-linejoin="round" />
+                                </svg>
+                                <span>Escolher arquivo(s)</span>
+                            </label>
+                            <div class="file-list" id="batchFileList"></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Organizer Mode -->
+            <section class="card organizer-card hidden" id="organizerSection">
+                <div class="card-header">
+                    <div class="card-icon">
+                        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"
+                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>
+                    </div>
+                    <div>
+                        <h2 class="card-title">Organizar Envios</h2>
+                        <p class="card-description">Prepare seus arquivos antes de enviar</p>
+                    </div>
+                </div>
+
+                <div class="organizer-container">
+                    <!-- Sidebar -->
+                    <div class="organizer-sidebar">
+                        <div class="sidebar-header">
+                            <h3>Arquivos Pendentes</h3>
+                            <button class="btn-icon-small" id="refreshTriagemBtn" title="Atualizar Lista">
+                                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path
+                                        d="M23 4v6h-6M1 20v-6h6M20.49 15a9 9 0 11-2.12-9.36L23 10M1 14l2.12-3.64a9 9 0 112.12 9.36"
+                                        stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                        stroke-linejoin="round" />
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="sidebar-list" id="triagemList">
+                            <!-- Items serão inseridos via JS -->
+                            <div class="empty-list">Nenhum arquivo na pasta triagem</div>
+                        </div>
+                        <div class="sidebar-footer">
+                            <small>Coloque arquivos na pasta <code>triagem/</code></small>
+                        </div>
+                    </div>
+
+                    <!-- Main Content -->
+                    <div class="organizer-main">
+                        <div class="preview-container" id="filePreview">
+                            <div class="preview-placeholder">
+                                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path
+                                        d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                                        stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                        stroke-linejoin="round" />
+                                </svg>
+                                <p>Selecione um arquivo para visualizar</p>
+                            </div>
+                        </div>
+
+                        <div class="organizer-controls disabled" id="organizerControls">
+                            <div class="form-group email-group-organizer">
+                                <label for="organizerEmail">Renomear para (Email do Destinatário)</label>
+                                <div class="input-with-button">
+                                    <input type="email" id="organizerEmail" class="form-input"
+                                        placeholder="destinatario@email.com">
+                                    <button class="btn btn-primary" id="processFileBtn">
+                                        Confirmar e Mover
+                                        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                            <path d="M5 12h14m-7-7l7 7-7 7" stroke="currentColor" stroke-width="2"
+                                                stroke-linecap="round" stroke-linejoin="round" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Auto Mode Info -->
+            <section class="card email-form-card hidden" id="autoModeForm">
+                <div class="card-header">
+                    <div class="card-icon">
+                        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M13 10V3L4 14H11V21L20 10H13Z" stroke="currentColor" stroke-width="2"
+                                stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>
+                    </div>
+                    <div>
+                        <h2 class="card-title">Envio Automático</h2>
+                        <p class="card-description">Baseado em arquivos na pasta anexos/</p>
+                    </div>
+                </div>
+
+                <div class="auto-mode-info">
+                    <div class="info-box">
+                        <div class="info-icon">
+                            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path
+                                    d="M13 16H12V12H11M12 8H12.01M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z"
+                                    stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round" />
+                            </svg>
+                        </div>
+                        <div class="info-content">
+                            <h3>Como funciona</h3>
+                            <ul>
+                                <li>Coloque os arquivos na pasta <code>anexos/</code></li>
+                                <li>Nomeie cada arquivo com o email do destinatário</li>
+                                <li>Exemplo: <code>cliente@empresa.com.pdf</code></li>
+                                <li>Configure o template em <code>config/email_template.txt</code></li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="form-group full-width">
+                            <label for="autoSubject" class="form-label">
+                                <svg class="label-icon" viewBox="0 0 24 24" fill="none"
+                                    xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M7 8H17M7 12H17M7 16H12" stroke="currentColor" stroke-width="2"
+                                        stroke-linecap="round" stroke-linejoin="round" />
+                                </svg>
+                                Assunto Padrão
+                            </label>
+                            <input type="text" id="autoSubject" class="form-input" placeholder="Documentos Solicitados"
+                                value="Documentos">
+                        </div>
+
+                        <div class="form-group full-width">
+                            <label for="autoMessage" class="form-label">
+                                <svg class="label-icon" viewBox="0 0 24 24" fill="none"
+                                    xmlns="http://www.w3.org/2000/svg">
+                                    <path
+                                        d="M8 10H16M8 14H11M6 21H18C19.1046 21 20 20.1046 20 19V5C20 3.89543 19.1046 3 18 3H6C4.89543 3 4 3.89543 4 5V19C4 20.1046 4.89543 21 6 21Z"
+                                        stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                        stroke-linejoin="round" />
+                                </svg>
+                                Mensagem Padrão
+                            </label>
+                            <textarea id="autoMessage" class="form-textarea" rows="6"
+                                placeholder="Digite a mensagem padrão...">Prezado(a),
+
+Segue em anexo os documentos solicitados.
+
+Atenciosamente,
+Equipe</textarea>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Live Log Area -->
+            <section class="card log-card" id="logSection">
+                <div class="card-header">
+                    <div class="card-icon">
+                        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path
+                                d="M9 5H7C5.89543 5 5 5.89543 5 7V19C5 20.1046 5.89543 21 7 21H17C18.1046 21 19 20.1046 19 19V7C19 5.89543 18.1046 5 17 5H15M9 5C9 6.10457 9.89543 7 11 7H13C14.1046 7 15 6.10457 15 5M9 5C9 3.89543 9.89543 3 11 3H13C14.1046 3 15 3.89543 15 5M12 12H15M12 16H15M9 12H9.01M9 16H9.01"
+                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>
+                    </div>
+                    <div>
+                        <h2 class="card-title">Log de Atividades</h2>
+                        <p class="card-description">Acompanhe em tempo real o que está acontecendo</p>
+                    </div>
+                    <button class="btn-icon" id="clearLogBtn" title="Limpar logs">
+                        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path
+                                d="M19 7L18.1327 19.1425C18.0579 20.1891 17.187 21 16.1378 21H7.86224C6.81296 21 5.94208 20.1891 5.86732 19.1425L5 7M10 11V17M14 11V17M15 7V4C15 3.44772 14.5523 3 14 3H10C9.44772 3 9 3.44772 9 4V7M4 7H20"
+                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>
+                    </button>
+                </div>
+                <div class="log-container" id="logContainer">
+                    <div class="log-empty">
+                        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path
+                                d="M9 5H7C5.89543 5 5 5.89543 5 7V19C5 20.1046 5.89543 21 7 21H17C18.1046 21 19 20.1046 19 19V7C19 5.89543 18.1046 5 17 5H15"
+                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                        </svg>
+                        <p>Nenhuma atividade ainda. Clique em "Testar Conexão" para começar.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Action Buttons -->
+            <div class="action-buttons">
+                <button class="btn btn-secondary" id="testBtn">
+                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path
+                            d="M9 12L11 14L15 10M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z"
+                            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                    <span>Testar Conexão</span>
+                </button>
+                <button class="btn btn-primary" id="sendBtn">
+                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M22 2L11 13M22 2L15 22L11 13M22 2L2 9L11 13" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                    <span>Enviar Email(s)</span>
+                </button>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>Enviador de Email Automático v2.0 • Roundcube Webmail</p>
+            <div class="footer-links">
+                <a href="#" id="viewLogsLink">Ver Logs</a>
+                <a href="#" id="helpLink">Ajuda</a>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- Modal -->
+    <div class="modal hidden" id="modal">
+        <div class="modal-overlay" id="modalOverlay"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title" id="modalTitle">Título</h3>
+                <button class="modal-close" id="modalClose">
+                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                            stroke-linejoin="round" />
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body" id="modalBody">
+                Conteúdo do modal
+            </div>
+            <div class="modal-footer" id="modalFooter">
+                <button class="btn btn-secondary" id="modalCancel">Cancelar</button>
+                <button class="btn btn-primary" id="modalConfirm">Confirmar</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>
