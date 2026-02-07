@@ -5,6 +5,10 @@ Importa e usa as funções do main.py para envio real de emails
 
 import sys
 import os
+import logging
+
+# Configurar logger
+logger = logging.getLogger('EmailAutomation.GUI')
 
 # Adicionar diretório pai ao path para importar main.py
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -18,7 +22,7 @@ import time
 try:
     from main import fazer_login, enviar_email, registrar_log, validar_email
 except ImportError as e:
-    print(f"⚠️ Erro ao importar funções do main.py: {e}")
+    logger.error(f"Erro ao importar funções do main.py: {e}")
     fazer_login = None
     enviar_email = None
     registrar_log = None
@@ -35,7 +39,7 @@ class EmailAutomation:
     def iniciar_navegador(self):
         """Inicia o navegador Chrome"""
         if self.driver is None:
-            print("🚀 Iniciando navegador Chrome...")
+            logger.info("Iniciando navegador Chrome...")
             service = Service(ChromeDriverManager().install())
             self.driver = webdriver.Chrome(service=service)
             self.driver.maximize_window()
@@ -48,16 +52,16 @@ class EmailAutomation:
             return False
         
         if fazer_login:
-            self.logged_in = fazer_login(self.driver, url, email, senha)
+            self.logged_in = fazer_login(self.driver, url, email, senha, modo_gui=True)
             return self.logged_in
         else:
-            print("❌ Função fazer_login não disponível")
+            logger.error("Função fazer_login não disponível")
             return False
     
     def enviar_email_unico(self, destinatario, assunto, mensagem, anexos=None):
         """Envia um único email usando a função do main.py"""
         if not self.logged_in:
-            print("❌ Não está logado no webmail")
+            logger.error("Não está logado no webmail")
             return False
         
         if enviar_email:
@@ -68,20 +72,20 @@ class EmailAutomation:
             
             return sucesso
         else:
-            print("❌ Função enviar_email não disponível")
+            logger.error("Função enviar_email não disponível")
             return False
     
     def enviar_emails_lote(self, destinatarios, assunto, mensagem, anexos=None):
         """Envia emails em lote"""
         if not self.logged_in:
-            print("❌ Não está logado no webmail")
+            logger.error("Não está logado no webmail")
             return {'enviados': 0, 'falhas': 0}
         
         enviados = 0
         falhas = 0
         
         for idx, dest in enumerate(destinatarios, 1):
-            print(f"\n[{idx}/{len(destinatarios)}] Enviando para: {dest}")
+            logger.info(f"[{idx}/{len(destinatarios)}] Enviando para: {dest}")
             
             if enviar_email:
                 sucesso = enviar_email(self.driver, dest, assunto, mensagem, anexos)
@@ -98,7 +102,7 @@ class EmailAutomation:
                 if idx < len(destinatarios):
                     time.sleep(5)
             else:
-                print("❌ Função enviar_email não disponível")
+                logger.error("Função enviar_email não disponível")
                 falhas += 1
         
         return {'enviados': enviados, 'falhas': falhas}
@@ -106,7 +110,7 @@ class EmailAutomation:
     def fechar_navegador(self):
         """Fecha o navegador"""
         if self.driver:
-            print("🔒 Fechando navegador...")
+            logger.info("Fechando navegador...")
             self.driver.quit()
             self.driver = None
             self.logged_in = False

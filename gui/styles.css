@@ -399,6 +399,57 @@ body {
     height: 20px;
 }
 
+/* Input with Contacts Button */
+.input-with-contacts {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+}
+
+.input-with-contacts .form-input {
+    flex: 1;
+}
+
+.btn-contacts {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    padding: 0.625rem 1rem;
+    background: var(--color-bg-tertiary);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    color: var(--color-text-secondary);
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--transition-base);
+    white-space: nowrap;
+}
+
+.btn-contacts:hover {
+    background: var(--color-primary-light);
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+}
+
+.btn-contacts:active {
+    transform: scale(0.98);
+}
+
+.btn-contacts svg {
+    color: currentColor;
+}
+
+/* Contacts Dropdown */
+.contacts-dropdown {
+    animation: slideIn 0.2s ease !important;
+}
+
+.contacts-dropdown .contact-item:last-child {
+    border-bottom: none;
+}
+
 .file-input-wrapper {
     display: flex;
     flex-direction: column;

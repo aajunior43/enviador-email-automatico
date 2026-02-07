@@ -14,6 +14,7 @@ from dotenv import load_dotenv
 import unicodedata
 import re
 import time
+import shutil
 import PyPDF2
 
 # Importar módulo de automação
@@ -35,11 +36,13 @@ CORS(app)
 LOGS_DIR = os.path.join(BASE_DIR, 'logs')
 ANEXOS_DIR = os.path.join(BASE_DIR, 'anexos')
 CONFIG_DIR = os.path.join(BASE_DIR, 'config')
+ENVIADOS_DIR = os.path.join(BASE_DIR, 'enviados')
 
 # Criar diretórios se não existirem
 os.makedirs(LOGS_DIR, exist_ok=True)
 os.makedirs(ANEXOS_DIR, exist_ok=True)
 os.makedirs(CONFIG_DIR, exist_ok=True)
+os.makedirs(ENVIADOS_DIR, exist_ok=True)
 
 TRIAGEM_DIR = os.path.join(BASE_DIR, 'triagem')
 os.makedirs(TRIAGEM_DIR, exist_ok=True)
@@ -67,7 +70,7 @@ def cleanup_logs():
                     os.remove(path)
                     print(f"🧹 Log antigo removido: {f}")
     except Exception as e:
-        print(f"⚠️ Erro ao limpar logs: {e}")
+        print(f"[AVISO] Erro ao limpar logs: {e}")
 
 # Executar limpeza de logs no início
 cleanup_logs()
@@ -126,7 +129,7 @@ def load_email_template():
             
             message = '\n'.join(text_lines)
     except Exception as e:
-        print(f"⚠️ Erro ao carregar template: {e}")
+        print(f"[AVISO] Erro ao carregar template: {e}")
     
     return subject, message
 
@@ -214,6 +217,8 @@ def send_email():
             return send_batch_emails(data, credentials)
         elif mode == 'auto':
             return send_auto_emails(data, credentials)
+        elif mode == 'send-to-contacts':
+            return send_batch_emails(data, credentials)
         else:
             return jsonify({
                 'success': False,
@@ -437,6 +442,21 @@ def send_auto_emails(data, credentials):
                     sent_count += 1
                     with open(log_file, 'a') as f:
                         f.write(f"{datetime.now()}: SUCESSO - {recipient} - {file}\n")
+                    
+                    # MOVER ARQUIVO PARA PASTA ENVIADOS
+                    try:
+                        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                        filename_base, ext = os.path.splitext(file)
+                        novo_nome = f"{filename_base}_{timestamp}{ext}"
+                        destino = os.path.join(ENVIADOS_DIR, novo_nome)
+                        
+                        if os.path.exists(file_path):
+                            shutil.move(file_path, destino)
+                            print(f"[OK] Arquivo movido: {file} -> enviados/{novo_nome}")
+                        else:
+                            print(f"[AVISO] Arquivo nao encontrado para mover: {file_path}")
+                    except Exception as move_error:
+                        print(f"[ERRO] Erro ao mover arquivo {file}: {str(move_error)}")
                 else:
                     failed_count += 1
                     with open(log_file, 'a') as f:
@@ -869,10 +889,10 @@ if __name__ == '__main__':
     print("  ENVIADOR DE EMAIL AUTOMÁTICO - INTERFACE WEB")
     print("=" * 80)
     print()
-    print("🌐 Servidor iniciando em: http://localhost:5000")
-    print("📁 Diretório base:", BASE_DIR)
+    print("Servidor iniciando em: http://localhost:5000")
+    print("Diretorio base:", BASE_DIR)
     print()
-    print("✨ Abrindo navegador...")
+    print("Abrindo navegador...")
     print()
     
     # Abrir navegador em uma thread separada

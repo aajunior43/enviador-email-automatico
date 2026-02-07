@@ -25,6 +25,7 @@ const elements = {
     modeAuto: document.getElementById('modeAuto'),
     modeOrganizer: document.getElementById('modeOrganizer'),
     modeContacts: document.getElementById('modeContacts'),
+    modeSendToContacts: document.getElementById('modeSendToContacts'),
 
     // Forms
     singleModeForm: document.getElementById('singleModeForm'),
@@ -33,6 +34,7 @@ const elements = {
     autoModeForm: document.getElementById('autoModeForm'),
     organizerSection: document.getElementById('organizerSection'),
     contactsSection: document.getElementById('contactsSection'),
+    sendToContactsSection: document.getElementById('sendToContactsSection'),
 
     // Inputs
     webmailUrl: document.getElementById('webmailUrl'),
@@ -99,7 +101,17 @@ const elements = {
 
     // Contacts
     contactsTable: document.getElementById('contactsTable'),
-    noContactsMessage: document.getElementById('noContactsMessage')
+    noContactsMessage: document.getElementById('noContactsMessage'),
+
+    // Send to Contacts mode
+    sendToContactsSubject: document.getElementById('sendToContactsSubject'),
+    sendToContactsMessage: document.getElementById('sendToContactsMessage'),
+    sendToContactsAttachment: document.getElementById('sendToContactsAttachment'),
+    sendToContactsFileName: document.getElementById('sendToContactsFileName'),
+    contactsCheckboxes: document.getElementById('contactsCheckboxes'),
+    noContactsForSend: document.getElementById('noContactsForSend'),
+    selectAllContacts: document.getElementById('selectAllContacts'),
+    selectedContactsCount: document.getElementById('selectedContactsCount')
 };
 
 // ===================================
@@ -128,6 +140,7 @@ function setupEventListeners() {
     elements.modeAuto.addEventListener('click', () => switchMode('auto'));
     elements.modeOrganizer.addEventListener('click', () => switchMode('organizer'));
     if (elements.modeContacts) elements.modeContacts.addEventListener('click', () => switchMode('contacts'));
+    if (elements.modeSendToContacts) elements.modeSendToContacts.addEventListener('click', () => switchMode('send-to-contacts'));
 
     // Password toggle
     elements.togglePassword.addEventListener('click', togglePasswordVisibility);
@@ -135,6 +148,20 @@ function setupEventListeners() {
     // File inputs
     elements.attachment.addEventListener('change', (e) => handleFileSelect(e, 'single'));
     elements.batchAttachment.addEventListener('change', (e) => handleFileSelect(e, 'batch'));
+    if (elements.sendToContactsAttachment) {
+        elements.sendToContactsAttachment.addEventListener('change', (e) => {
+            handleFileSelect(e, 'send-to-contacts');
+            // Update file name display
+            const files = e.target.files;
+            if (files.length > 0) {
+                elements.sendToContactsFileName.textContent = files.length === 1 
+                    ? files[0].name 
+                    : `${files.length} arquivos selecionados`;
+            } else {
+                elements.sendToContactsFileName.textContent = 'Nenhum arquivo selecionado';
+            }
+        });
+    }
 
     // Recipient list validation
     elements.recipientList.addEventListener('input', validateRecipientList);
@@ -174,6 +201,12 @@ function setupEventListeners() {
     if (elements.refreshTriagemBtn) elements.refreshTriagemBtn.addEventListener('click', loadTriagemFiles);
     if (elements.processFileBtn) elements.processFileBtn.addEventListener('click', processTriagemFile);
     if (elements.scanEmailBtn) elements.scanEmailBtn.addEventListener('click', scanEmail);
+
+    // Contact Selection Listener
+    const btnSelectContact = document.getElementById('btnSelectContact');
+    if (btnSelectContact) {
+        btnSelectContact.addEventListener('click', showContactsDropdown);
+    }
 }
 
 // ===================================
@@ -237,6 +270,7 @@ function switchMode(mode) {
     elements.modeAuto.classList.toggle('active', mode === 'auto');
     elements.modeOrganizer.classList.toggle('active', mode === 'organizer');
     if (elements.modeContacts) elements.modeContacts.classList.toggle('active', mode === 'contacts');
+    if (elements.modeSendToContacts) elements.modeSendToContacts.classList.toggle('active', mode === 'send-to-contacts');
 
     elements.singleModeForm.classList.toggle('hidden', mode !== 'single');
     elements.batchModeForm.classList.toggle('hidden', mode !== 'batch');
@@ -248,6 +282,9 @@ function switchMode(mode) {
     if (elements.contactsSection) {
         elements.contactsSection.classList.toggle('hidden', mode !== 'contacts');
     }
+    if (elements.sendToContactsSection) {
+        elements.sendToContactsSection.classList.toggle('hidden', mode !== 'send-to-contacts');
+    }
 
     // Gerenciar visibilidade dos botões principais
     const actionButtons = document.querySelector('.action-buttons');
@@ -257,6 +294,9 @@ function switchMode(mode) {
     } else if (mode === 'contacts') {
         if (actionButtons) actionButtons.classList.add('hidden');
         loadContacts();
+    } else if (mode === 'send-to-contacts') {
+        if (actionButtons) actionButtons.classList.remove('hidden');
+        loadContactsForSending();
     } else {
         if (actionButtons) actionButtons.classList.remove('hidden');
     }
@@ -579,6 +619,21 @@ async function sendEmails() {
         sendBatchEmails(validEmails);
     } else if (state.currentMode === 'auto') {
         sendAutoEmails();
+    } else if (state.currentMode === 'send-to-contacts') {
+        const selectedCheckboxes = document.querySelectorAll('#contactsCheckboxes input[type="checkbox"]:checked');
+        const selectedEmails = Array.from(selectedCheckboxes).map(cb => cb.value);
+        
+        if (selectedEmails.length === 0) {
+            showToast('Erro', 'Selecione pelo menos um contato', 'error');
+            return;
+        }
+        
+        if (!elements.sendToContactsSubject.value || !elements.sendToContactsMessage.value) {
+            showToast('Erro', 'Preencha assunto e mensagem', 'error');
+            return;
+        }
+        
+        sendToContactsEmails(selectedEmails);
     }
 }
 
@@ -1362,6 +1417,162 @@ async function deleteContact(email) {
 }
 
 // ===================================
+// SEND TO CONTACTS MODE
+// ===================================
+async function loadContactsForSending() {
+    try {
+        const response = await fetch('/api/contacts');
+        const contacts = await response.json();
+
+        renderContactsCheckboxes(contacts);
+    } catch (error) {
+        console.error('Erro ao carregar contatos:', error);
+        showToast('Erro', 'Falha ao carregar contatos', 'error');
+    }
+}
+
+function renderContactsCheckboxes(contacts) {
+    const container = elements.contactsCheckboxes;
+    const noContactsMessage = elements.noContactsForSend;
+    const selectAllCheckbox = elements.selectAllContacts;
+    const countDisplay = elements.selectedContactsCount;
+
+    container.innerHTML = '';
+
+    if (!contacts || contacts.length === 0) {
+        container.style.display = 'none';
+        noContactsMessage.style.display = 'block';
+        selectAllCheckbox.disabled = true;
+        countDisplay.textContent = 'Nenhum contato cadastrado';
+        return;
+    }
+
+    container.style.display = 'grid';
+    noContactsMessage.style.display = 'none';
+    selectAllCheckbox.disabled = false;
+
+    contacts.forEach(contact => {
+        const label = document.createElement('label');
+        label.style.cssText = `
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.2s;
+        `;
+        label.innerHTML = `
+            <input type="checkbox" value="${contact.email}" style="width: 18px; height: 18px; flex-shrink: 0;">
+            <div style="flex: 1; min-width: 0;">
+                <div style="font-weight: 500; color: var(--color-text-primary);">${contact.name}</div>
+                <div style="font-size: 0.8rem; color: var(--color-text-secondary);">${contact.email}</div>
+            </div>
+        `;
+
+        label.addEventListener('mouseenter', () => {
+            label.style.background = 'var(--color-bg-tertiary)';
+        });
+        label.addEventListener('mouseleave', () => {
+            label.style.background = 'transparent';
+        });
+
+        const checkbox = label.querySelector('input');
+        checkbox.addEventListener('change', updateSelectedContactsCount);
+
+        container.appendChild(label);
+    });
+
+    // Setup select all checkbox
+    selectAllCheckbox.checked = false;
+    selectAllCheckbox.addEventListener('change', (e) => {
+        const checkboxes = container.querySelectorAll('input[type="checkbox"]');
+        checkboxes.forEach(cb => cb.checked = e.target.checked);
+        updateSelectedContactsCount();
+    });
+
+    updateSelectedContactsCount();
+}
+
+function updateSelectedContactsCount() {
+    const selectedCheckboxes = document.querySelectorAll('#contactsCheckboxes input[type="checkbox"]:checked');
+    const count = selectedCheckboxes.length;
+    elements.selectedContactsCount.textContent = count === 0 ? 'Nenhum contato selecionado' : `${count} contato(s) selecionado(s)`;
+}
+
+async function sendToContactsEmails(emails) {
+    const data = {
+        mode: 'send-to-contacts',
+        credentials: {
+            url: elements.webmailUrl.value,
+            email: elements.emailLogin.value,
+            password: elements.emailPassword.value
+        },
+        recipients: emails,
+        subject: elements.sendToContactsSubject.value,
+        message: elements.sendToContactsMessage.value,
+        files: state.files['send-to-contacts'] || []
+    };
+
+    const contactsList = emails.join(', ');
+    showModal(
+        'Confirmar Envio',
+        `
+            <p>Você está prestes a enviar um email para <strong>${emails.length}</strong> contato(s):</p>
+            <div style="margin-top: 1rem; max-height: 100px; overflow-y: auto; background: var(--color-bg-tertiary); padding: 0.5rem; border-radius: 4px; font-size: 0.85rem;">
+                ${contactsList}
+            </div>
+            <p style="margin-top: 1rem; color: var(--color-text-secondary);">Assunto: ${data.subject}</p>
+        `,
+        async () => {
+            updateStatus('Enviando...', 'info');
+            showToast('Enviando', `Iniciando envio para ${emails.length} contato(s)...`, 'info');
+
+            addLog(`📧 Iniciando envio para ${emails.length} contato(s)...`, 'info');
+            addLog(`📝 Assunto: ${data.subject}`, 'step');
+
+            try {
+                const response = await fetch('/api/send-email', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    addLog('✅ ' + result.message, 'success');
+                    showToast('Sucesso', result.message, 'success');
+                    updateStatus('Pronto', 'success');
+
+                    // Clear form
+                    elements.sendToContactsSubject.value = '';
+                    elements.sendToContactsMessage.value = '';
+                    elements.sendToContactsAttachment.value = '';
+                    elements.sendToContactsFileName.textContent = 'Nenhum arquivo selecionado';
+                    state.files['send-to-contacts'] = [];
+                    
+                    // Uncheck all checkboxes
+                    const checkboxes = document.querySelectorAll('#contactsCheckboxes input[type="checkbox"]');
+                    checkboxes.forEach(cb => cb.checked = false);
+                    elements.selectAllContacts.checked = false;
+                    updateSelectedContactsCount();
+                } else {
+                    addLog('❌ ' + result.message, 'error');
+                    showToast('Erro', result.message, 'error');
+                    updateStatus('Erro', 'error');
+                }
+            } catch (error) {
+                console.error('Erro ao enviar:', error);
+                addLog('❌ Erro na conexão com o servidor', 'error');
+                showToast('Erro', 'Erro na conexão com o servidor', 'error');
+                updateStatus('Erro', 'error');
+            }
+        }
+    );
+}
+
+// ===================================
 // REPORTS
 // ===================================
 async function downloadReport() {
@@ -1395,4 +1606,130 @@ async function downloadReport() {
         updateStatus('Erro', 'error');
     }
 }
+
+// ===================================
+// CONTACTS DROPDOWN FOR RECIPIENT FIELD
+// ===================================
+let contactsDropdownOpen = false;
+
+async function showContactsDropdown() {
+    // Fechar dropdown se já estiver aberto
+    if (contactsDropdownOpen) {
+        closeContactsDropdown();
+        return;
+    }
+
+    // Carregar contatos
+    try {
+        const response = await fetch('/api/contacts');
+        const contacts = await response.json();
+
+        if (!contacts || contacts.length === 0) {
+            showToast('Aviso', 'Nenhum contato cadastrado. Adicione contatos na aba "Contatos".', 'warning');
+            return;
+        }
+
+        // Criar dropdown
+        createContactsDropdown(contacts);
+    } catch (error) {
+        console.error('Erro ao carregar contatos:', error);
+        showToast('Erro', 'Falha ao carregar contatos', 'error');
+    }
+}
+
+function createContactsDropdown(contacts) {
+    // Remover dropdown anterior se existir
+    closeContactsDropdown();
+
+    const recipientInput = document.getElementById('recipient');
+    const inputRect = recipientInput.getBoundingClientRect();
+
+    // Criar container do dropdown
+    const dropdown = document.createElement('div');
+    dropdown.id = 'contactsDropdown';
+    dropdown.className = 'contacts-dropdown';
+    dropdown.style.cssText = `
+        position: absolute;
+        top: ${inputRect.bottom + window.scrollY + 5}px;
+        left: ${inputRect.left + window.scrollX}px;
+        width: ${inputRect.width}px;
+        max-height: 300px;
+        background: var(--color-bg-secondary);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-md);
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+        z-index: 1000;
+        overflow-y: auto;
+        animation: slideIn 0.2s ease;
+    `;
+
+    // Criar lista de contatos
+    const list = document.createElement('div');
+    list.className = 'contacts-list';
+
+    contacts.forEach(contact => {
+        const item = document.createElement('div');
+        item.className = 'contact-item';
+        item.style.cssText = `
+            padding: 0.75rem 1rem;
+            cursor: pointer;
+            border-bottom: 1px solid var(--color-border);
+            transition: background 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        `;
+        item.innerHTML = `
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="width: 20px; height: 20px; color: var(--color-primary); flex-shrink: 0;">
+                <path d="M16 7C16 9.20914 14.2091 11 12 11C9.79086 11 8 9.20914 8 7C8 4.79086 9.79086 3 12 3C14.2091 3 16 4.79086 16 7Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M12 14C8.13401 14 5 17.134 5 21H19C19 17.134 15.866 14 12 14Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <div style="flex: 1; min-width: 0;">
+                <div style="font-weight: 500; color: var(--color-text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${contact.name}</div>
+                <div style="font-size: 0.8rem; color: var(--color-text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${contact.email}</div>
+            </div>
+        `;
+
+        item.addEventListener('mouseenter', () => {
+            item.style.background = 'var(--color-bg-tertiary)';
+        });
+        item.addEventListener('mouseleave', () => {
+            item.style.background = 'transparent';
+        });
+        item.addEventListener('click', () => {
+            recipientInput.value = contact.email;
+            closeContactsDropdown();
+            showToast('Sucesso', `Contato "${contact.name}" selecionado`, 'success');
+        });
+
+        list.appendChild(item);
+    });
+
+    dropdown.appendChild(list);
+    document.body.appendChild(dropdown);
+    contactsDropdownOpen = true;
+
+    // Fechar ao clicar fora
+    setTimeout(() => {
+        document.addEventListener('click', closeContactsDropdownOutside);
+    }, 100);
+}
+
+function closeContactsDropdown() {
+    const dropdown = document.getElementById('contactsDropdown');
+    if (dropdown) {
+        dropdown.remove();
+    }
+    contactsDropdownOpen = false;
+    document.removeEventListener('click', closeContactsDropdownOutside);
+}
+
+function closeContactsDropdownOutside(event) {
+    const dropdown = document.getElementById('contactsDropdown');
+    const btn = document.getElementById('btnSelectContact');
+    if (dropdown && !dropdown.contains(event.target) && event.target !== btn && !btn.contains(event.target)) {
+        closeContactsDropdown();
+    }
+}
+
 
